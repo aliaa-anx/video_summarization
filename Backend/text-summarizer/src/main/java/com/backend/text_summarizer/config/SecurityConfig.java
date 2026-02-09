@@ -3,7 +3,10 @@ package com.backend.text_summarizer.config;
 
 import com.backend.text_summarizer.security.JwtAuthFilter;
 import com.backend.text_summarizer.service.UserDetailsServiceImpl;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +19,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 // this marks the class as a Spring configuration class
+@Data
 @Configuration
 @RequiredArgsConstructor
 /*
@@ -26,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
         - Which filters run and in what order
         - Whether sessions are used
 */
+
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
