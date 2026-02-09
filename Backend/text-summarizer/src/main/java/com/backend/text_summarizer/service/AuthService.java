@@ -8,8 +8,10 @@ import com.backend.text_summarizer.entity.RoleName;
 import com.backend.text_summarizer.entity.User;
 import com.backend.text_summarizer.repository.RoleRepository;
 import com.backend.text_summarizer.repository.UserRepository;
+import com.backend.text_summarizer.security.EmailValidator;
 import com.backend.text_summarizer.security.JwtUtil;
 import com.backend.text_summarizer.security.PasswordValidator;
+import com.backend.text_summarizer.security.EmailValidator;
 import lombok.Data;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,9 +33,18 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
 
+
+
     public String Register(RegisterRequest request){
+
+        //check email
+        boolean isEmailValid= EmailValidator.isValid(request.getEmail());
+        if (!isEmailValid) {
+            throw new IllegalArgumentException("Error: Invalid email format!");
+        }
         //1.check if username already exists
-        if(userRepository.findByUsername(request.getUsername()).isPresent()){
+        String normalizedUsername = request.getUsername().toLowerCase();
+        if(userRepository.findByUsername(normalizedUsername).isPresent()){
             throw new RuntimeException("Error: Username is already taken!");}
         //check email
         if(userRepository.existsByEmail(request.getEmail())){
@@ -45,9 +56,10 @@ public class AuthService {
                     "1 Upper, 1 Number, 1 Special Char.");
         }
 
+
         //3. create new user object
         User user = new User();
-        user.setUsername(request.getUsername());
+        user.setUsername(normalizedUsername);
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         //4.assign userRole
@@ -67,14 +79,15 @@ public class AuthService {
         }
         public AuthResponse Login(LoginRequest request){
         //1. check username&password
+            String normalizedUsername = request.getUsername().toLowerCase();
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
+                            normalizedUsername,
                             request.getPassword()
                     )
             );
         //2.if we reach this part that means user is valid now we will get the userobject
-            var user = userRepository.findByUsername(request.getUsername())
+            var user = userRepository.findByUsername(normalizedUsername)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
         //3.Generate Token
