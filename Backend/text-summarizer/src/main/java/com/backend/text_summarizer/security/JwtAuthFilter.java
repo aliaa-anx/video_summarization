@@ -65,17 +65,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             // If token was logged out → reject request immediately
             if (tokenBlacklistService.isBlacklisted(token)) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                        "Token has been revoked");
-                return;
+                throw new org.springframework.security.authentication.BadCredentialsException(
+                        "Token has been revoked"
+                );
             }
 
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                        "Invalid or expired token");
-                return;
+                throw new org.springframework.security.authentication.BadCredentialsException(
+                        "Invalid or expired token"
+                );
             }
         }
 
