@@ -4,7 +4,7 @@
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>
-        <option value="$PROJECT_DIR$/Backend/text-summarizer/pom.xml" />
+        <option value="$PROJECT_DIR$/text-summarizer/pom.xml" />
       </list>
     </option>
   </component>
