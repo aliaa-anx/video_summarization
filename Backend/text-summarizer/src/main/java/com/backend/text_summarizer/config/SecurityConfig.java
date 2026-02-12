@@ -43,7 +43,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // disable CSRF since we are using JWT
+            .csrf(csrf -> csrf.disable())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) // Handles 401 (Unauth)
+                        .accessDeniedHandler(customAccessDeniedHandler)      // Handles 403 (Forbidden)
+                )// disable CSRF since we are using JWT
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/auth/**","/password/**").permitAll()// public endpoints
                     .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
