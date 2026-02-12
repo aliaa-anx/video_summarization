@@ -1,6 +1,8 @@
 package com.backend.text_summarizer.config;
 
+import com.backend.text_summarizer.security.CustomAccessDeniedHandler;
 import com.backend.text_summarizer.security.JwtAuthFilter;
+import com.backend.text_summarizer.security.JwtAuthenticationEntryPoint;
 import com.backend.text_summarizer.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +24,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     // Password encoder bean
     @Bean
@@ -39,22 +43,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // disable CSRF since we are using JWT
-            .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(
-                            "/api/auth/login",
-                            "/api/auth/register",
-                            "/api/auth/refresh",
-                            "/api/auth/logout",
-                            "/password/**"
-                    ).permitAll()// public endpoints
-                    .anyRequest().authenticated() // all others require authentication
-            )
-            .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // no sessions
-            )
-            // add JWT filter before Spring's UsernamePasswordAuthenticationFilter
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/refresh",
+                                "/api/auth/logout"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
