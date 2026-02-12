@@ -45,7 +45,8 @@ public class SecurityConfig {
                             "/api/auth/login",
                             "/api/auth/register",
                             "/api/auth/refresh",
-                            "/api/auth/logout"
+                            "/api/auth/logout",
+                            "/password/**"
                     ).permitAll()// public endpoints
                     .anyRequest().authenticated() // all others require authentication
             )
