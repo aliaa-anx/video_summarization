@@ -2,16 +2,20 @@ package com.backend.text_summarizer.service;
 
 import com.backend.text_summarizer.dto.AuthResponse;
 import com.backend.text_summarizer.dto.LoginRequest;
+import com.backend.text_summarizer.dto.RefreshTokenRequest;
 import com.backend.text_summarizer.dto.RegisterRequest;
+import com.backend.text_summarizer.entity.RefreshToken;
 import com.backend.text_summarizer.entity.Role;
 import com.backend.text_summarizer.entity.RoleName;
 import com.backend.text_summarizer.entity.User;
+import com.backend.text_summarizer.repository.RefreshTokenRepository;
 import com.backend.text_summarizer.repository.RoleRepository;
 import com.backend.text_summarizer.repository.UserRepository;
 import com.backend.text_summarizer.security.EmailValidator;
 import com.backend.text_summarizer.security.JwtUtil;
 import com.backend.text_summarizer.security.PasswordValidator;
 import com.backend.text_summarizer.security.EmailValidator;
+import jakarta.transaction.Transactional;
 import lombok.Data;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +28,7 @@ import java.util.Set;
 
 @Service
 @Data
+@Transactional
 public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -31,7 +36,9 @@ public class AuthService {
     private com.backend.text_summarizer.entity.User User;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-
+    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
 
 
@@ -86,15 +93,69 @@ public class AuthService {
                             request.getPassword()
                     )
             );
-        //2.if we reach this part that means user is valid now we will get the userobject
+            //2.if we reach this part that means user is valid now we will get the userobject
             var user = userRepository.findByUsername(normalizedUsername)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-        //3.Generate Token
-            String jwtToken = jwtUtil.generateToken(user.getUsername());
-        //4. return teh token
-            return new AuthResponse(jwtToken);
+            // to delete old refresh tokens so only one refresh token active
+            refreshTokenRepository.deleteByUser(user);
+            String accessToken = jwtUtil.generateToken(user.getUsername());  // to generate the Short-lived JWT
+
+            var refreshToken = refreshTokenService.createRefreshToken(user);  // to generate the Long-lived JWT then Stored in DB
+
+            return new AuthResponse(
+                    accessToken,
+                    refreshToken.getToken()
+            );
 
         }
-    }
+
+        public void logout(String token){
+            // now the JWT (access token) can’t be used again
+            tokenBlacklistService.blacklistToken(token);
+
+            String username = jwtUtil.extractUsername(token);
+
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow();
+            // now the JWT (refresh token) can’t be used again
+            refreshTokenRepository.deleteByUser(user);
+        }
+
+        // this method is called when the client’s access token has expired and the client wants a new access
+        // token without logging in again, so we use the refresh token to be able to do that
+        public AuthResponse refreshToken(RefreshTokenRequest request){
+
+            String requestToken = request.getRefreshToken();
+            // check if the refresh token given in the request exists or not
+            RefreshToken refreshToken = refreshTokenRepository.findByToken(requestToken)
+                    .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+            // check if the refresh token given in the request expired or not (it will be invalid if its expired)
+            refreshTokenService.verifyExpiration(refreshToken);
+            // we implemented the refresh tokens to be rotated, means if we used our refresh token once this
+            // token can't be used anymore to refresh again, so this refresh token is said to be 'revoked'
+            if(refreshToken.isRevoked()){
+                throw new RuntimeException("Refresh token already used.");
+            }
+
+            // as I just said, if we used our refresh token once this token can't be used anymore to refresh
+            // again so it is marked to be 'revoked'  :)
+            refreshToken.setRevoked(true);
+            refreshTokenRepository.save(refreshToken);
+
+            // create new refresh token
+            var newRefreshToken =
+                    refreshTokenService.createRefreshToken(refreshToken.getUser());
+
+            // create new access token
+            String newAccessToken =
+                    jwtUtil.generateToken(refreshToken.getUser().getUsername());
+
+            return new AuthResponse(
+                    newAccessToken,
+                    newRefreshToken.getToken()
+            );
+        }
+
+}
 

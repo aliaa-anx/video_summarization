@@ -1,6 +1,8 @@
 package com.backend.text_summarizer.config;
 
+import com.backend.text_summarizer.security.CustomAccessDeniedHandler;
 import com.backend.text_summarizer.security.JwtAuthFilter;
+import com.backend.text_summarizer.security.JwtAuthenticationEntryPoint;
 import com.backend.text_summarizer.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +24,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     // Password encoder bean
     @Bean
