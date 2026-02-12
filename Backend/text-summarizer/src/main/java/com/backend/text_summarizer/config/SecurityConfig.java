@@ -41,7 +41,8 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable()) // disable CSRF since we are using JWT
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/**","/password/**").permitAll() // public endpoints
+                    .requestMatchers("/api/auth/**","/password/**").permitAll()// public endpoints
+                    .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                     .anyRequest().authenticated() // all others require authentication
             )
             .sessionManagement(session -> session
