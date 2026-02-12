@@ -12,11 +12,15 @@ import java.io.IOException;
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException
-    ) throws IOException {
+    public void commence(HttpServletRequest request,
+                         HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+
+        String message = (String) request.getAttribute("jwt_error");
+
+        if (message == null) {
+            message = "Authentication required";
+        }
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
@@ -24,8 +28,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.getWriter().write("""
         {
           "error": "Unauthorized",
-          "message": "Authentication required or token is invalid"
+          "message": "%s"
         }
-        """);
+        """.formatted(message));
     }
 }
+

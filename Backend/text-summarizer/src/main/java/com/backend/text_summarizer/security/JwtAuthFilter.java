@@ -2,11 +2,14 @@ package com.backend.text_summarizer.security;
 
 import com.backend.text_summarizer.service.TokenBlacklistService;
 import com.backend.text_summarizer.service.UserDetailsServiceImpl;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -65,17 +68,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             // If token was logged out → reject request immediately
             if (tokenBlacklistService.isBlacklisted(token)) {
-                throw new org.springframework.security.authentication.BadCredentialsException(
-                        "Token has been revoked"
-                );
+                request.setAttribute("jwt_error", "Token revoked");
+                throw new BadCredentialsException("Token revoked");
             }
 
             try {
                 username = jwtUtil.extractUsername(token);
-            } catch (Exception e) {
-                throw new org.springframework.security.authentication.BadCredentialsException(
-                        "Invalid or expired token"
-                );
+            } catch (ExpiredJwtException e) {
+                request.setAttribute("jwt_error", "Token expired");
+                throw e;
+            } catch (JwtException e) {
+                request.setAttribute("jwt_error", "Invalid token");
+                throw e;
             }
         }
 
