@@ -1,0 +1,7 @@
+server:
+  port: 8761
+
+eureka:
+  client:
+    register-with-eureka: false # this prevents the Eureka Server from registering itself
+    fetch-registry: false # this is the root registry, so this prevents Eureka Server from trying to fetch other registries
