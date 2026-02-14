@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service  # lb:// = Load Balancer
+          predicates:
+            - Path=/api/auth/**
+
+        - id: test-service
+          uri: lb://test-service
+          predicates:
+            - Path=/test/**
+      discovery:
+        locator:
+          enabled: true   # this automatically creates routes for services registered in Eureka
+
+# our gateway registers itself in Eureka
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+jwt:
+  secret: MySuperSecretJwtKeyForGraduationProject1234
