@@ -88,7 +88,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
                         return chain.filter(mutatedExchange);   // this sends request to downstream service
 
-                    //  if the JWT is expired or fake then
+                        //  if the JWT is expired or fake then
                     } catch (JwtException e) {
                         return unauthorized(exchange);
                     }

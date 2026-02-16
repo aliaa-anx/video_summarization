@@ -31,6 +31,7 @@ public class GatewayHeaderFilter extends OncePerRequestFilter {
         }
 
         String username = request.getHeader("X-User-Username");
+        String rolesHeader = request.getHeader("X-User-Roles");
 
         if (username == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

@@ -14,10 +14,11 @@ spring:
     show-sql: true
 
 eureka:
+  instance:
+    prefer-ip-address: true # This tells Eureka to share the IP, not the Laptop name
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
-
 
 jwt:
   secret: MySuperSecretJwtKeyForGraduationProject1234

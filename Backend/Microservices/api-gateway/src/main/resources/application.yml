@@ -7,25 +7,29 @@ spring:
 
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
       routes:
         - id: auth-service
-          uri: lb://auth-service  # lb:// = Load Balancer
+          uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
-
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin/**
         - id: test-service
           uri: lb://test-service
           predicates:
             - Path=/test/**
-      discovery:
-        locator:
-          enabled: true   # this automatically creates routes for services registered in Eureka
 
-# our gateway registers itself in Eureka
 eureka:
+  instance:
+    prefer-ip-address: true
+
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
-
 jwt:
   secret: MySuperSecretJwtKeyForGraduationProject1234
