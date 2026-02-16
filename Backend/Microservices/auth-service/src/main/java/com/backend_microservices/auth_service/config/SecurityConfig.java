@@ -39,6 +39,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/password/**").permitAll()
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/internal/**").permitAll()
                         .anyRequest().permitAll() // TRUST GATEWAY, no JWT checks anymore here
                 )
                 .sessionManagement(session ->
