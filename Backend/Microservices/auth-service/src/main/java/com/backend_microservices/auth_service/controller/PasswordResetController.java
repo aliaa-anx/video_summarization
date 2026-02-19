@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/password")
 @RequiredArgsConstructor
@@ -50,7 +53,11 @@ public class PasswordResetController {
             System.err.println("DEBUG: Feign call failed: " + e.getMessage());
             return ResponseEntity.internalServerError().body("Failed to send email.");
         }
-        return ResponseEntity.ok("Reset link sent to console/email.");
+        Map<String,String> response =new HashMap<>();
+        response.put("message", "Reset link sent to email");
+        response.put("token", token);
+        return ResponseEntity.ok(response);
+
     }
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
