@@ -23,27 +23,27 @@ public class AiController {
     private final MeetingService meetingService;
     private final SummaryService summaryService;
 
-    @PostMapping("/upload")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
-    public MeetingTranscript uploadMeeting(
-            @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") String userId
-    ) throws Exception {
-
-        return meetingService.processMeeting(
-                file,
-                UUID.fromString(userId)
-        );
-    }
-
-    @PostMapping("/summarize")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
-    public SummarizeResponse summarize(
-            @RequestBody SummarizeRequest request){
-
-        return summaryService
-                .summarizeText(request.getTranscript());
-    }
+//    @PostMapping("/upload")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public MeetingTranscript uploadMeeting(
+//            @RequestParam("file") MultipartFile file,
+//            @RequestHeader("X-User-Id") String userId
+//    ) throws Exception {
+//
+//        return meetingService.processMeeting(
+//                file,
+//                UUID.fromString(userId)
+//        );
+//    }
+//
+//    @PostMapping("/summarize")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public SummarizeResponse summarize(
+//            @RequestBody SummarizeRequest request){
+//
+//        return summaryService
+//                .summarizeText(request.getTranscript());
+//    }
 
     @PostMapping("/upload-summarize")
     @PreAuthorize("hasAuthority('ROLE_USER')")
