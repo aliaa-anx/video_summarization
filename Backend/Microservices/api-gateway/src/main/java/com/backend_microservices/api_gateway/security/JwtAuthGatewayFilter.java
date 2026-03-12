@@ -13,6 +13,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Component
 //  implements GlobalFilter => this filter applies to ALL routes so centralized security enforcement
 public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
@@ -78,11 +80,13 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
                         String username = claims.getSubject();
                         String roles = claims.get("roles", String.class);
+                        String userId = claims.get("userId", String.class);
 
                         ServerWebExchange mutatedExchange = exchange.mutate()
                                 .request(builder -> builder
                                         .header("X-User-Username", username)
                                         .header("X-User-Roles", roles)
+                                        .header("X-User-Id", userId)
                                 )
                                 .build();
 
