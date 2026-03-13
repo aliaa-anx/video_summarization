@@ -1,9 +1,13 @@
 package com.backend_microservices.ai_service.entity;
-import jakarta.persistence.*;
-import lombok.*;
 
-import java.util.UUID;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
+
 @Setter
 @Getter
 @AllArgsConstructor

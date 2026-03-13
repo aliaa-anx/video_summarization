@@ -24,11 +24,17 @@
         <module name="admin-service" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ai-service (1)" target="20" />
+      <module name="ai-service (2)" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="admin-service" options="-parameters" />
       <module name="ai-service" options="-parameters" />
+      <module name="ai-service (1)" options="-parameters" />
+      <module name="ai-service (2)" options="-parameters" />
       <module name="api-gateway" options="-parameters" />
       <module name="auth-service" options="-parameters" />
       <module name="discovery-server" options="-parameters" />

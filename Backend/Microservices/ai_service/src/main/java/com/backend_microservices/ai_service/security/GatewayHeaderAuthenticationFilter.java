@@ -35,6 +35,8 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("ROLES HEADER: " + rolesHeader);
         System.out.println("User ID HEADER: " + userId);
 
+
+
         if (username != null && rolesHeader != null) {
 
 
