@@ -10,7 +10,7 @@ public class SummarizationClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private final String Summarization_URL = "https://irritatingly-tressed-luciano.ngrok-free.dev/summarize";
+    private final String Summarization_URL = "https://growlingly-ponderous-leah.ngrok-free.dev/summarize";
 
     public SummarizeResponse summarize(String transcript){
 

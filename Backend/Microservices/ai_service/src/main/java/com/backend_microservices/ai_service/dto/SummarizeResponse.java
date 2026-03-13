@@ -1,5 +1,5 @@
 package com.backend_microservices.ai_service.dto;
-
+import java.util.UUID;
 import lombok.*;
 @Data
 @Getter

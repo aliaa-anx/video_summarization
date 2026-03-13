@@ -51,69 +51,42 @@ public class AiController {
 
     @PostMapping("/upload-summarize")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public SummarizeResponse uploadThenSummarize(
+    public ResponseEntity<UploadResponse> uploadThenSummarize(
             @RequestParam("file") MultipartFile file,
             @RequestHeader("X-User-Id") String userId
     ) throws Exception {
+        MeetingTranscript meeting = meetingService.processMeeting(file, UUID.fromString(userId));
+        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript());
 
-        return meetingService.processMeetingThenSummarize(
-                file,
-                UUID.fromString(userId)
-        );
+//        return meetingService.processMeetingThenSummarize(
+//                file,
+//                UUID.fromString(userId)
+//        );
+        return ResponseEntity.ok(new UploadResponse(
+                summaryResponse,
+                meeting.getId()
+        ));
     }
 
 
 
     /**
      * Endpoint to initialize a chat with a video transcript.
-     * URL: POST http://localhost:8080/ai/init/{userId}
+     * URL: POST http://localhost:8080/ai/init/
      */
-    @PostMapping("/upload")
+    @PostMapping("/chat/{meetingId}/init")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<UploadResponse> uploadMeeting(
-            @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") String userId
-    ) throws Exception {
-
-        // 1. Process meeting — get transcript
-//        MeetingTranscript meeting = meetingService.processMeeting(
-//                file,
-//                UUID.fromString(userId)
-//        );
-        //TODO: replace this with real transcription when model is available
-        String mockTranscript = "This meeting discussed Q3 targets. " +
-                "The team agreed to increase sales by 20 percent. " +
-                "Marketing will focus on social media campaigns. " +
-                "Product team will release new features by end of month.";
-
-
-        // 2. Initialize chat with the transcript
-        String conversationId = chatService.initializeChat(
-                UUID.fromString(userId),
-                file.getOriginalFilename(),
-                //meeting.getCorrectedTranscript()
-                mockTranscript
-        );
-
-        // 3. Return transcript + conversationId
-        return ResponseEntity.ok(new UploadResponse(
-                //meeting.getTranscript(),
-                mockTranscript,
-                conversationId
-        ));
-    }
-    @PostMapping("/chat/init")
     public ResponseEntity<String> initChat(
 
-            @RequestParam String title,
-            @RequestBody InitRequest initRequest,
+            @PathVariable UUID meetingId,
             @RequestHeader("X-User-Id") String userId){
+        MeetingTranscript meeting = meetingService.findById(meetingId);
 
         String conversationId = chatService.initializeChat(
                 UUID.fromString(userId),
-                 title,
-                initRequest.getTranscript()
-                );
+                meeting.getFileName(),
+                meeting.getCorrectedTranscript()
+        );
         return ResponseEntity.ok(conversationId);
     }
     /**
@@ -121,6 +94,7 @@ public class AiController {
      * URL: POST http://localhost:8080/ai/chat/{chatId}
      */
     @PostMapping("/chat/{chatId}/ask")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<String> askQuestion(
             @PathVariable UUID chatId,
             @RequestBody ChatRequest chatRequest) {
@@ -134,40 +108,10 @@ public class AiController {
      * URL: GET http://localhost:8080/ai/history/{chatId}
      */
     @GetMapping("/history/{chatId}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<List<Message>> getHistory(@PathVariable UUID chatId) {
         return ResponseEntity.ok(chatService.getChatHistory(chatId));
     }
-
-//    @PostMapping("/upload-summarize")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public SummarizeResponse uploadThenSummarize(
-//            @RequestParam("file") MultipartFile file,
-//            @RequestHeader("X-User-Id") String userId
-//    ) throws Exception {
-//
-//
-////        // 1. Process meeting (get transcript directly)
-////        MeetingTranscript meeting = meetingService.processMeeting(file, UUID.fromString(userId));
-////
-////        // 2. Summarize
-////        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript());
-////
-////        // 3. Initialize chat  (returns conversationId)
-////        String conversationId = chatService.initializeChat(
-////                UUID.fromString(userId),
-////                file.getOriginalFilename(),
-////                meeting.getCorrectedTranscript()
-////        );
-////
-////        // 4. Return everything
-////        return ResponseEntity.ok(new SummarizeResponse(
-////                summaryResponse.getSummary(),
-////                summaryResponse.getLanguage(),
-////                conversationId
-////        ));
-//
-//
-//    }
 
 
 }
