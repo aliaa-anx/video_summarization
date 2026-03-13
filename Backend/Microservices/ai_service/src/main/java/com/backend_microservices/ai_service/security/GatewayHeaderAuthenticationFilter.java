@@ -1,4 +1,4 @@
-package com.backend_microservices.admin_service.security;
+package com.backend_microservices.ai_service.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

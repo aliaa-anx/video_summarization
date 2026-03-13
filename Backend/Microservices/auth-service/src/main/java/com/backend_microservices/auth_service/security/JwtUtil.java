@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -28,7 +29,7 @@ public class JwtUtil {
     }
 
     // JWT token's payload contains: sub = username, iat = issued at, exp = expiration time
-    public String generateToken(String username, Set<Role> roles) {
+    public String generateToken(UUID userId, String username, Set<Role> roles) {
 
         String rolesString = roles.stream()
                 .map(Role::getRoleName)
@@ -36,12 +37,14 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim("userId", userId.toString()) // JWT stores it as String
                 .claim("roles", rolesString)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
     // extracts username from a token
     public String extractUsername(String token) {
         return parseClaims(token).getBody().getSubject();
@@ -54,6 +57,11 @@ public class JwtUtil {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public UUID extractUserId(String token) {
+        String id = parseClaims(token).getBody().get("userId", String.class);
+        return UUID.fromString(id);
     }
 
     // claims are the information stored inside the token

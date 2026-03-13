@@ -118,7 +118,7 @@ public class AuthService {
         refreshTokenRepository.deleteByUser(user);
 
         String accessToken =
-                jwtUtil.generateToken(user.getUsername(), user.getRoles());
+                jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRoles());
         var refreshToken = refreshTokenService.createRefreshToken(user); // to generate the Long-lived JWT then Stored in DB
 
         return new AuthResponse(
@@ -168,6 +168,7 @@ public class AuthService {
         // create new access token
         String newAccessToken =
                 jwtUtil.generateToken(
+                        refreshToken.getUser().getId(),
                         refreshToken.getUser().getUsername(),
                         refreshToken.getUser().getRoles()
                 );
