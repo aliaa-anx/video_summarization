@@ -26,21 +26,25 @@ public class PasswordResetService {
 
     //1. CREATE TOKEN
     @Transactional
-    public String createTokenForUser(User user){
-
+    public String createTokenForUser(User user) {
+        // 1. Clean up old tokens
         tokenRepository.deleteByUserId(user.getId());
+
+        // 2. Create and Save the new token
         String token = UUID.randomUUID().toString();
-        PasswordResetTokens myToken= new PasswordResetTokens();
+        PasswordResetTokens myToken = new PasswordResetTokens();
         myToken.setToken(token);
         myToken.setUser(user);
         myToken.setExpiryDate(LocalDateTime.now().plusMinutes(15));
         myToken.setUsed(false);
+
         tokenRepository.save(myToken);
 
+
+
         return token;
-
     }
-
+    @Transactional
     public String validatePasswordResetToken(String token) {
         PasswordResetTokens passToken = tokenRepository.findByToken(token)
                 .orElse(null);
@@ -50,10 +54,12 @@ public class PasswordResetService {
         }
 
         if (passToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            //tokenRepository.delete(passToken);
             return "expired";
         }
 
         if (passToken.isUsed()) {
+            //tokenRepository.delete(passToken);
             return "used"; // Prevent replay attacks
         }
 
@@ -70,12 +76,14 @@ public class PasswordResetService {
         userRepository.save(user);
     }
 
-    public void consumeToken(String token) {
+   public void consumeToken(String token) {
         PasswordResetTokens storedToken = tokenRepository.findByToken(token).orElse(null);
         if (storedToken != null) {
             storedToken.setUsed(true);
             tokenRepository.save(storedToken);
         }
     }
+
+
 }
 
