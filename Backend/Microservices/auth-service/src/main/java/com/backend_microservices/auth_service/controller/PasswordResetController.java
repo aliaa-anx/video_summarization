@@ -67,6 +67,7 @@ public class PasswordResetController {
             return ResponseEntity.badRequest().body("Token is " + validationResult);
         }
 
+
         // 2. Get User & Change Password
         User user = passwordResetService.getUserByToken(request.getToken());
         if (user != null) {
@@ -74,6 +75,7 @@ public class PasswordResetController {
             passwordResetService.consumeToken(request.getToken()); // Mark token as used
             return ResponseEntity.ok("Password successfully updated.");
         }
+
 
         return ResponseEntity.badRequest().body("Error processing request.");
     }
