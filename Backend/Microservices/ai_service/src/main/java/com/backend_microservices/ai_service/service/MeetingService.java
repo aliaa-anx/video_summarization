@@ -56,6 +56,7 @@ public class MeetingService {
 
         SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript());
 
+
         Summary summary = Summary.builder()
                 .id(UUID.randomUUID())
                 .summary(summaryResponse.getSummary())
@@ -69,4 +70,9 @@ public class MeetingService {
 
         return summaryResponse;
    }
+
+    public MeetingTranscript findById(UUID meetingId) {
+        return transcriptRepo.findById(meetingId)
+                .orElseThrow(() -> new RuntimeException("Meeting not found"));
+    }
 }

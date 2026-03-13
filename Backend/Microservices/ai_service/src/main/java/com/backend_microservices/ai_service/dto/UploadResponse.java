@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -11,7 +12,6 @@ import lombok.Setter;
 @Setter
 public class UploadResponse {
 
-    private String transcript;
-
-    private String conversationId;
+    private SummarizeResponse summarizeResponse;
+    private UUID meetingId;
 }
