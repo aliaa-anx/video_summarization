@@ -27,6 +27,7 @@ public class SummaryService {
         return new SummarizeResponse(
                 summaryResponse.getSummary(),
                 summaryResponse.getLanguage()
+
         );
     }
 

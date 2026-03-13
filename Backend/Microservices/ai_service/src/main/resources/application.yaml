@@ -5,13 +5,14 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/ai_db
+    url: jdbc:postgresql://localhost:5432/auth_db
     username: postgres
     password: 123
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
 
 eureka:
   instance:
@@ -22,3 +23,7 @@ eureka:
 
 jwt:
   secret: MySuperSecretJwtKeyForGraduationProject1234
+# Your custom Python setting at the ROOT level
+python:
+  ai:
+    url: https://loyce-unlamentable-nonpleadingly.ngrok-free.dev

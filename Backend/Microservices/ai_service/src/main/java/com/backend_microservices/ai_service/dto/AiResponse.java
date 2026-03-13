@@ -13,7 +13,7 @@ import java.util.List;
 public class AiResponse {
     //private String reply;
     private String reply;
-    private List<EmbeddingPayload> payload; // This list name must match line 40
+    private List<EmbeddingPayload> payload;
 
     @Data
     public static class EmbeddingPayload { // Must be 'public static'

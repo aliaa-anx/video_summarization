@@ -2,18 +2,12 @@ package com.backend_microservices.ai_service.service;
 
 import com.backend_microservices.ai_service.dto.AiResponse;
 import com.backend_microservices.ai_service.dto.InitRequest;
-
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Map;
 import java.util.UUID;
-
-
 
 
 @Service
