@@ -27,15 +27,23 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
 
         String username = request.getHeader("X-User-Username");
         String rolesHeader = request.getHeader("X-User-Roles");
-        UUID userId = UUID.fromString(request.getHeader("X-User-Id"));
+        //UUID userId = UUID.fromString(request.getHeader("X-User-Id"));
+        String idHeader = request.getHeader("X-User-Id");
 
         System.out.println("=== ADMIN SERVICE FILTER ===");
 
         System.out.println("USERNAME HEADER: " + username);
         System.out.println("ROLES HEADER: " + rolesHeader);
-        System.out.println("User ID HEADER: " + userId);
+        //System.out.println("User ID HEADER: " + userId);
 
-
+        if (idHeader != null && !idHeader.isEmpty()) {
+            try {
+                UUID userId = UUID.fromString(idHeader);
+                System.out.println("User ID HEADER: " + userId);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Invalid UUID format: " + idHeader);
+            }
+        }
 
         if (username != null && rolesHeader != null) {
 

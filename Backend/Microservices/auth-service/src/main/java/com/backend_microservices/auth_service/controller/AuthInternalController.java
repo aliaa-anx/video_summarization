@@ -20,16 +20,23 @@ public class AuthInternalController {
     private final RoleRepository roleRepository;
     private final AuthService authService;
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
 
+    @GetMapping("/count-all") // Must match the client!
+    public long getTotalUserCount() {
+        return userRepository.count();
+    }
     @GetMapping("/{id}")
     public User getUserById(@PathVariable UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+
 
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable UUID id) {
@@ -71,4 +78,5 @@ public class AuthInternalController {
     public List<User> searchUsers(@RequestParam String keyword) {
         return userRepository.findByEmailContainingIgnoreCaseOrUsernameContainingIgnoreCase(keyword, keyword);
     }
+
 }

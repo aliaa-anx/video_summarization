@@ -54,7 +54,7 @@ public class MeetingService {
 
         MeetingTranscript meeting = processMeeting(file, userId);
 
-        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript());
+        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript(), meeting);
 
 
         Summary summary = Summary.builder()

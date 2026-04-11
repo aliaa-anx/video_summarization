@@ -17,7 +17,7 @@ public class TranscriptionClient {
     // this is a Spring HTTP client used to call external APIs
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private final String TRANSCRIPTION_URL = "https://nonprognosticative-shenita-impermissible.ngrok-free.dev/process-file";
+    private final String TRANSCRIPTION_URL = "https://cyclist-transport-felt-tip.ngrok-free.dev/process-file";
 
     // this method receives Java File object (java.io.File) like: meeting_12345.mp3
     public TranscriptionResponse processFile(File file) {

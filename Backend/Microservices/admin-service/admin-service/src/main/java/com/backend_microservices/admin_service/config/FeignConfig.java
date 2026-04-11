@@ -1,6 +1,7 @@
 package com.backend_microservices.admin_service.config;
 
 import feign.RequestInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,20 @@ public class FeignConfig {
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
 
+
+            // 1. Get the current incoming request
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+
+                // 2. Pull the User-Id directly from the incoming header
+                // Note: Ensure this name matches exactly what the Gateway or your logs showed
+                String userId = request.getHeader("X-User-Id");
+                if (userId != null) {
+                    requestTemplate.header("X-User-Id", userId);
+                }
+
             Authentication authentication =
                     SecurityContextHolder.getContext().getAuthentication();
 
@@ -34,7 +49,8 @@ public class FeignConfig {
                         .collect(Collectors.joining(","));
 
                 requestTemplate.header("X-User-Roles", roles);
+
             }
         };
-    }
-}
+    };
+}}

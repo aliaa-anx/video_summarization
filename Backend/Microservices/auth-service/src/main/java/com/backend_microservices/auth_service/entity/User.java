@@ -38,6 +38,7 @@ public class User {
     @Builder.Default
     private boolean enabled = true;
 
+
     // A user can have many roles, A role can belong to many users
     @ManyToMany(fetch = FetchType.EAGER)    // when i load a User, load Roles immediately for authentication
     // This creates a third table that contains the user id and the role id
