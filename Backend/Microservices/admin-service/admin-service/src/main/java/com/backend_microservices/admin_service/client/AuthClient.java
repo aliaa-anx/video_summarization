@@ -17,6 +17,9 @@ public interface AuthClient {
     @GetMapping("/api/internal/users")
     List<AdminUserDto> getAllUsers();
 
+    @GetMapping("/api/internal/users/count-all")
+    long getTotalUserCount();
+
     @GetMapping("/api/internal/users/{id}")
     AdminUserDto getUserById(@PathVariable("id") UUID id);
 
@@ -34,4 +37,5 @@ public interface AuthClient {
 
     @GetMapping("/api/internal/users/search")
     List<AdminUserDto> searchUsers(@RequestParam("keyword") String keyword);
+
 }

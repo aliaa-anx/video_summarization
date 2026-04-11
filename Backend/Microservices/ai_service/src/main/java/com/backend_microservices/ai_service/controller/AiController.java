@@ -27,27 +27,7 @@ public class AiController {
     private final SummaryService summaryService;
     private final ChatService chatService;
 
-//    @PostMapping("/upload")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public MeetingTranscript uploadMeeting(
-//            @RequestParam("file") MultipartFile file,
-//            @RequestHeader("X-User-Id") String userId
-//    ) throws Exception {
-//
-//        return meetingService.processMeeting(
-//                file,
-//                UUID.fromString(userId)
-//        );
-//    }
-//
-//    @PostMapping("/summarize")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public SummarizeResponse summarize(
-//            @RequestBody SummarizeRequest request){
-//
-//        return summaryService
-//                .summarizeText(request.getTranscript());
-//    }
+
 
     @PostMapping("/upload-summarize")
     @PreAuthorize("hasAuthority('ROLE_USER')")
@@ -56,12 +36,10 @@ public class AiController {
             @RequestHeader("X-User-Id") String userId
     ) throws Exception {
         MeetingTranscript meeting = meetingService.processMeeting(file, UUID.fromString(userId));
-        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript());
+        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript(),meeting);
+        //SummarizeResponse summary = meetingService.processMeetingThenSummarize(meeting);
 
-//        return meetingService.processMeetingThenSummarize(
-//                file,
-//                UUID.fromString(userId)
-//        );
+
         return ResponseEntity.ok(new UploadResponse(
                 summaryResponse,
                 meeting.getId()
