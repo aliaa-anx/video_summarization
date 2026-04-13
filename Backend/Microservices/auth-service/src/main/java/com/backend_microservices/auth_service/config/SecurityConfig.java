@@ -1,5 +1,6 @@
 package com.backend_microservices.auth_service.config;
 
+import com.backend_microservices.auth_service.security.GatewayHeaderFilter;
 import com.backend_microservices.auth_service.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
+    private final AuditLoggingFilter auditLoggingFilter;
 
     // Password encoder bean
     @Bean
@@ -45,7 +47,7 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                ).addFilterAfter(auditLoggingFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
