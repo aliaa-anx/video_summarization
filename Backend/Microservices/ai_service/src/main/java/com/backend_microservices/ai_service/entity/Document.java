@@ -34,4 +34,7 @@ public class Document {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+    private Double startTime;  // null for text mode
+    private Double endTime;    // null for text mode
+
 }

@@ -84,7 +84,9 @@ public class AiController {
         String conversationId = chatService.initializeChat(
                 UUID.fromString(userId),
                 meeting.getFileName(),
-                meeting.getCorrectedTranscript()
+                meeting.getCorrectedTranscript(),
+                meeting.getSource(),
+                meeting.getSegmentsJson()
         );
         return ResponseEntity.ok(conversationId);
     }
@@ -106,10 +108,18 @@ public class AiController {
      * Endpoint to retrieve chat history.
      * URL: GET http://localhost:8080/ai/history/{chatId}
      */
-    @GetMapping("/history/{chatId}")
+//    @GetMapping("/history/{chatId}")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public ResponseEntity<List<Message>> getHistory(@PathVariable UUID chatId) {
+//        return ResponseEntity.ok(chatService.getChatHistory(chatId));
+//    }
+
+    @GetMapping("/history")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<List<Message>> getHistory(@PathVariable UUID chatId) {
-        return ResponseEntity.ok(chatService.getChatHistory(chatId));
+    public ResponseEntity<List<ChatHistoryDto>> getHistory(@RequestHeader("X-User-Id") String userId) {
+        UUID userUuid = UUID.fromString(userId);
+        // This will return an array of ChatHistoryDto objects
+        return ResponseEntity.ok(chatService.getGroupedChatHistory(userUuid));
     }
 
 

@@ -13,4 +13,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InitRequest {
     private String transcript;
+
 }
