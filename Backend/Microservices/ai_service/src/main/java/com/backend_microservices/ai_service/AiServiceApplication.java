@@ -14,11 +14,11 @@ public class AiServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AiServiceApplication.class, args);}
 
-		@Bean
-		public RestTemplate restTemplate() {
-			return new RestTemplate();
+//		@Bean
+//		public RestTemplate restTemplate() {
+//			return new RestTemplate();
 
 
-	}
+	//}
 
 }

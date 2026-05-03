@@ -15,6 +15,6 @@ public class ChatRequest {
     //private String message;
     private String message;
     private List<MessageDTO> history; // The last few messages
-    private List<String> context;
+    private List<ContextChunk> context;
 
 }

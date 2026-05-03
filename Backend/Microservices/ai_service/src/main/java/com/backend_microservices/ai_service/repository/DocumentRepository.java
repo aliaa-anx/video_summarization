@@ -17,9 +17,10 @@ public interface DocumentRepository extends JpaRepository<Document,Long> {
     // Delete chunks if a video is removed or re-uploaded
     //void deleteBySourceName(String sourceName);
 
-    @Query(value = "SELECT content FROM rag.documents " +
+    @Query(value = "SELECT content, start_time, end_time" +
+            " FROM rag.documents " +
             "WHERE conversation_id = :chatId " +
             "ORDER BY embedding <=> cast(:queryVector as vector) " +
             "LIMIT 5", nativeQuery = true)
-    List<String> findRelevantContext(@Param("chatId") UUID chatId, @Param("queryVector") float[] queryVector);
+    List<Object[]> findRelevantContextWithTimeStamps(@Param("chatId") UUID chatId, @Param("queryVector") float[] queryVector);
 }

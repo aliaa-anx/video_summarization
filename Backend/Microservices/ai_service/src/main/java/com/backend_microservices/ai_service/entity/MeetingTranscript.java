@@ -27,6 +27,11 @@ public class MeetingTranscript {
 
     @Column(columnDefinition = "TEXT")
     private String correctedTranscript;
+    // ADD this field
+    @Column(columnDefinition = "TEXT")
+    private String segmentsJson;
+
+    private String source;
 
     private LocalDateTime createdAt;
 }
