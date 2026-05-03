@@ -1,0 +1,36 @@
+# FIRST OF ALL !!!
+# we must run docker desktop, and we then can close it after because it will run in the background :)
+# we must run this docker file after running docker desktop and before running this audit_service
+# the command we use to run this docker file from terminal is:  docker-compose up -d
+# and then run this service :D
+
+version: '3.8'
+
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"   # ELK port
+    networks:
+      - elk
+
+  kibana:   # it's the UI to be able to use ELK
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"   # kibana's port   => here is where we see the saved logs => http://localhost:5601/
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+networks:
+  elk:

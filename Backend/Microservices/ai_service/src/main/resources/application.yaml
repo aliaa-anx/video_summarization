@@ -5,7 +5,7 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
+    url: jdbc:postgresql://localhost:5432/ai_db
     username: postgres
     password: 123
   jpa:
