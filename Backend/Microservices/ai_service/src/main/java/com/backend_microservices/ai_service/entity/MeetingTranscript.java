@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class MeetingTranscript {
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     private UUID userId;
@@ -27,11 +29,13 @@ public class MeetingTranscript {
 
     @Column(columnDefinition = "TEXT")
     private String correctedTranscript;
-    // ADD this field
-    @Column(columnDefinition = "TEXT")
-    private String segmentsJson;
 
     private String source;
 
+    @Column(columnDefinition = "TEXT")
+    private String segmentsJson;
+
     private LocalDateTime createdAt;
+
+    private String videoPath;
 }

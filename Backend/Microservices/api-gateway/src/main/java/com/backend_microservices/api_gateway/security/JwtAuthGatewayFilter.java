@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.UUID;
 
+//  implements GlobalFilter => this filter applies to ALL routes so centralized security enforcement
 @Component
 public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
@@ -31,11 +32,15 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
         this.jwtUtil = jwtUtil;
         this.auditClient = auditClient;
         this.webClient = webClientBuilder
-                .baseUrl("lb://auth-service")
+                .baseUrl("lb://auth-service")       // to resolve auth-service to be able to use its endpoints
                 .build();
     }
 
     @Override
+    /*
+     this method intercepts every HTTP request and decides if to allow or reject or modify?
+     Mono<Void> → async completion signal
+    */
     public Mono<Void> filter(ServerWebExchange exchange,
                              GatewayFilterChain chain) {
 
@@ -45,10 +50,12 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
 
         String path = exchange.getRequest().getURI().getPath();
 
+        // to allow public endpoints to path without tokens
         if (path.startsWith("/api/auth") || path.startsWith("/password")) {
             return chain.filter(exchange);
         }
 
+        //  this reads authorization header as "Authorization: Bearer eyJhbGciOiJIUzI1..."
         String authHeader = exchange.getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
@@ -57,21 +64,25 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange, "Missing token");
         }
 
+        //  this extracts the token
         String token = authHeader.substring(7);
 
+        // this calls auth-service endpoint to check blacklist, used for logout so blacklisted tokens can't be used anymore
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/auth/check-blacklist")
                         .queryParam("token", token)
-                        .build())
+                        .build())       // till here it builds request like : GET /api/auth/check-blacklist?token=...
                 .retrieve()
-                .bodyToMono(Boolean.class)
+                .bodyToMono(Boolean.class) // converts HTTP response to boolean if true = blacklisted, false = valid
                 .flatMap(isBlacklisted -> {
 
+                    // means the user logged out already
                     if (Boolean.TRUE.equals(isBlacklisted)) {
                         return unauthorized(exchange, "Blacklisted token");
                     }
 
+                    //  if the JWT is not blacklisted then
                     try {
                         Claims claims = jwtUtil.extractClaims(token);
 
@@ -83,8 +94,9 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
                                 )
                                 .build();
 
-                        return chain.filter(mutated);
+                        return chain.filter(mutated);   // this sends request to downstream service
 
+                        //  if the JWT is expired or fake then
                     } catch (JwtException e) {
                         return unauthorized(exchange, "Invalid JWT");
                     }
@@ -115,6 +127,7 @@ public class JwtAuthGatewayFilter implements GlobalFilter, Ordered {
         return exchange.getResponse().setComplete();
     }
 
+    //  Negative = very early execution, so this Ensures: JWT check runs before routing and before response writing
     @Override
     public int getOrder() {
         return -1;
