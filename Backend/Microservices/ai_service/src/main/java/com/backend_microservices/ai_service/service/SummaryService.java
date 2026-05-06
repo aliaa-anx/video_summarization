@@ -1,18 +1,20 @@
 package com.backend_microservices.ai_service.service;
 
-import com.backend_microservices.ai_service.client.SummarizationClient;
+import com.backend_microservices.ai_service.client.ExtractiveSummarizationClient;
 import com.backend_microservices.ai_service.client.TranscriptionClient;
 import com.backend_microservices.ai_service.dto.*;
 
-import com.backend_microservices.ai_service.entity.MeetingTranscript;
-import com.backend_microservices.ai_service.entity.Summary;
 import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
 import com.backend_microservices.ai_service.repository.SummaryRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,42 +23,43 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SummaryService {
 
-    private final SummarizationClient aiClient;
+    private final ExtractiveSummarizationClient aiClient;
     private final SummaryRepository summaryRepo;
     private final TranscriptionClient transcriptionClient;
     private final MeetingTranscriptRepository transcriptRepo;
 
 
+    public SummarizeResponse summarizeTextExtractive(MeetingDto meetingDto) throws JsonProcessingException {
 
-    public SummarizeResponse summarizeText(String transcript, MeetingTranscript meeting){
-        /**
-        SummarizeResponse summaryResponse =
-                aiClient.summarize(transcript);
+        // used to convert between Java objects and JSON
+        ObjectMapper mapper = new ObjectMapper();
 
-        return new SummarizeResponse(
-                summaryResponse.getSummary(),
-                summaryResponse.getLanguage()
+        // remember that the user can upload text not just video, so text doesn't have timestamps of,course :)
+        List<SegmentDto> segments = Optional.ofNullable(meetingDto.getSegmentsJson())
+                .filter(s -> !s.isBlank())
+                .map(json -> {
+                    try {
+                        // this is a Jackson method that converts JSON to Java objects
+                        return mapper.readValue(json, new TypeReference<List<SegmentDto>>() {});
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .orElse(Collections.emptyList());   // if getSegmentsJson() returned null, meaning its text so it has no segments
 
-        );**/
-        // 1. Get the summary from the AI Model
-        SummarizeResponse aiResponse = aiClient.summarize(transcript);
-
-        // 2. Create the entity and save it to the DB
-        Summary summary = Summary.builder()
-                .id(UUID.randomUUID())
-                .summary(aiResponse.getSummary())
-                .language(aiResponse.getLanguage())
-                .createdAt(LocalDateTime.now())
-                .meeting(meeting) // Link to the transcript
-                .title(meeting.getFileName()) // Use the real filename for the dashboard
+        // building the request that we will send to the ai
+        SummarizeRequest request = SummarizeRequest.builder()
+                .transcript(meetingDto.getTranscript())
+                .source(meetingDto.getSource())
+                .correctedTranscript(meetingDto.getCorrected_text())
+                .segments(segments)
+                .status("success")
                 .build();
 
-        summaryRepo.save(summary);
+        SummarizeResponse summaryResponse = aiClient.summarize(request);
 
-        return aiResponse;
+        return summaryResponse;
     }
-
-
 
 
     public String extractTitle(String summary) {

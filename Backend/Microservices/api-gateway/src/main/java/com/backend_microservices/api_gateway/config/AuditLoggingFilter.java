@@ -63,6 +63,7 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
                 });
     }
 
+    // to get executed after the JwtAuthGatewayFilter
     @Override
     public int getOrder() {
         return 1;

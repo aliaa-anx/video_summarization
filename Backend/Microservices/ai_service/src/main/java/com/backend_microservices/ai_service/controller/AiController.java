@@ -2,16 +2,17 @@ package com.backend_microservices.ai_service.controller;
 
 import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
-import com.backend_microservices.ai_service.entity.Message;
-import com.backend_microservices.ai_service.entity.Summary;
 import com.backend_microservices.ai_service.service.ChatService;
 import com.backend_microservices.ai_service.service.MeetingService;
 import com.backend_microservices.ai_service.service.SummaryService;
+import org.springframework.core.io.Resource;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -40,32 +41,29 @@ public class AiController {
 //                UUID.fromString(userId)
 //        );
 //    }
-//
-//    @PostMapping("/summarize")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public SummarizeResponse summarize(
-//            @RequestBody SummarizeRequest request){
-//
-//        return summaryService
-//                .summarizeText(request.getTranscript());
-//    }
 
 
     @PostMapping("/upload-summarize")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<UploadResponse> uploadThenSummarize(
+    public SummarizeResponseWithMeetingId uploadThenSummarize(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") String userId
+            @RequestHeader("X-User-Id") UUID userId
     ) throws Exception {
-        MeetingTranscript meeting = meetingService.processMeeting(file, UUID.fromString(userId));
-        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript(),meeting);
-        //SummarizeResponse summary = meetingService.processMeetingThenSummarize(meeting);
+
+        return meetingService.processMeetingThenSummarizeExtractive(file, userId);
+    }
 
 
-        return ResponseEntity.ok(new UploadResponse(
-                summaryResponse,
-                meeting.getId()
-        ));
+    @GetMapping(value = "/reconstruct/{meetingId}", produces = "video/mp4")
+    public ResponseEntity<Resource> reconstruct(@PathVariable UUID meetingId) {
+        byte[] videoBytes = meetingService.reconstructMeeting(meetingId);
+        ByteArrayResource resource = new ByteArrayResource(videoBytes);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=reconstructed_" + meetingId + ".mp4")
+                .contentType(MediaType.valueOf("video/mp4"))
+                .contentLength(videoBytes.length)
+                .body(resource);
     }
 
 

@@ -1,7 +1,10 @@
 package com.backend_microservices.ai_service.service;
 
+import com.backend_microservices.ai_service.client.ExtractiveSummarizationClient;
 import com.backend_microservices.ai_service.client.TranscriptionClient;
+import com.backend_microservices.ai_service.dto.MeetingDto;
 import com.backend_microservices.ai_service.dto.SummarizeResponse;
+import com.backend_microservices.ai_service.dto.SummarizeResponseWithMeetingId;
 import com.backend_microservices.ai_service.dto.TranscriptionResponse;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
 import com.backend_microservices.ai_service.entity.Summary;
@@ -13,9 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,102 +28,96 @@ public class MeetingService {
     private final MeetingTranscriptRepository transcriptRepo;
     private final SummaryService summaryService;
     private final SummaryRepository summaryRepo;
+    private final ExtractiveSummarizationClient aiClient;
 
-//    public MeetingTranscript processMeeting(MultipartFile file, UUID userId) throws Exception {
-//
-//        // we need this to convert our Spring's MultipartFile to java.io.File, that's what the Ai team needs
-//        File tempFile = File.createTempFile("meeting_", file.getOriginalFilename());
-//        file.transferTo(tempFile);      // the file is copied into a temp file on disk like: meeting_12345.mp3
-//
-//        // here where our Ai team do their work ;)
-//        TranscriptionResponse transcription =
-//                transcriptionClient.processFile(tempFile);
-//
-//        // the rest of the code doesn't even need to be explained...
-//        MeetingTranscript meeting = MeetingTranscript.builder()
-//                .id(UUID.randomUUID())
-//                .userId(userId)
-//                .fileName(file.getOriginalFilename())
-//                .transcript(transcription.getTranscript())
-//                .correctedTranscript(transcription.getCorrectedText())
-//                .createdAt(LocalDateTime.now())
-//                .build();
-//
-//        transcriptRepo.save(meeting);
-//
-//        return meeting;
-//    }
 
     public MeetingTranscript processMeeting(MultipartFile file, UUID userId) throws Exception {
+        // remember that the file can be video or text not only video!
+        File fileToProcess;
+        String videoPath = null;
 
-        File tempFile = File.createTempFile("meeting_", file.getOriginalFilename());
-        file.transferTo(tempFile);
+        if (isVideo(file)) {
+            // if the uploaded file is video then we need to save it permanently (as like a dummy server)
+            // so it will be used if the user wanted to reconstruct it after getting summarized without getting the
+            // user to upload the video multiple times, only upload once at start and the reconstruct as you like ;)
+            String uploadDir = System.getProperty("user.dir") + "/uploads/";
+            File directory = new File(uploadDir);
 
-        TranscriptionResponse transcription = transcriptionClient.processFile(tempFile);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
 
-        // source comes directly from AI team response
-        String source = transcription.getSource();
+            String cleanName = file.getOriginalFilename().replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+            String fileName = UUID.randomUUID() + "_" + cleanName;
+            File savedFile = new File(uploadDir + fileName);
+            file.transferTo(savedFile);     // copy
+            fileToProcess = savedFile;
+            videoPath = savedFile.getAbsolutePath();
 
-        // Merge and save segments as JSON if audio
-        String segmentsJson = null;
-        if ("audio".equals(source) && transcription.getSegments() != null
-                && !transcription.getSegments().isEmpty()) {
-            List<TranscriptionResponse.Segment> merged =
-                    mergeSegments(transcription.getSegments(), 1.0);
-            segmentsJson = new ObjectMapper().writeValueAsString(merged);
+        } else {
+            // if the uploaded file is only textfile, we will only make a tempfile and not save it permanently
+            File tempFile = File.createTempFile("upload_", getExtension(file.getOriginalFilename()));
+            file.transferTo(tempFile);
+            fileToProcess = tempFile;
         }
 
+        // now wr need to send the file to the ai, wither text or video
+        TranscriptionResponse response = transcriptionClient.processFile(fileToProcess);
+
+        // after we got what we needed from the tempfile, now we need to delete it or else you will regret afterwards TwT
+        if (!isVideo(file) && fileToProcess.exists()) {
+            fileToProcess.delete();
+        }
+
+        // the rest of the code doesn't even need to be explained...
         MeetingTranscript meeting = MeetingTranscript.builder()
-                .id(UUID.randomUUID())
                 .userId(userId)
                 .fileName(file.getOriginalFilename())
-                .transcript(transcription.getTranscript())
-                .correctedTranscript(transcription.getCorrectedText())
-                .source(source)          // 👈 from AI response
-                .segmentsJson(segmentsJson)
+                .transcript(response.getTranscript())
+                .correctedTranscript(response.getCorrectedText())
+                .source(response.getSource())
                 .createdAt(LocalDateTime.now())
+                .videoPath(videoPath)   // either the real path or null in case of textfile
                 .build();
 
-        transcriptRepo.save(meeting);
-        return meeting;
-    }
+        // used to convert between Java objects and JSON
+        ObjectMapper mapper = new ObjectMapper();
 
-    private List<TranscriptionResponse.Segment> mergeSegments(
-            List<TranscriptionResponse.Segment> segments, double maxGap) {
+        // again segments also can be null in case of textfile
+        String segmentsJson = null;
 
-        List<TranscriptionResponse.Segment> merged = new ArrayList<>();
-        TranscriptionResponse.Segment current = segments.get(0);
-
-        for (int i = 1; i < segments.size(); i++) {
-            TranscriptionResponse.Segment next = segments.get(i);
-            double gap = next.getStart() - current.getEnd();
-
-            if (gap <= maxGap) {
-                current.setEnd(next.getEnd());
-                current.setText(current.getText() + " " + next.getText());
-            } else {
-                merged.add(current);
-                current = next;
-            }
+        // if the user uploaded video then we need to map from
+        if (response.getSegments() != null && !response.getSegments().isEmpty()) {
+            // this Jackson method converts Java objects to JSON string, this process is also called serialization
+            segmentsJson = mapper.writeValueAsString(response.getSegments());
         }
-        merged.add(current);
-        return merged;
+
+        meeting.setSegmentsJson(segmentsJson);
+
+        return transcriptRepo.save(meeting); // here it saves the transcript and its segments
     }
 
-
-
-
-
-    public SummarizeResponse processMeetingThenSummarize(MultipartFile file, UUID userId) throws Exception {
+    public SummarizeResponseWithMeetingId processMeetingThenSummarizeExtractive(MultipartFile file, UUID userId) throws Exception {
 
         MeetingTranscript meeting = processMeeting(file, userId);
 
-        SummarizeResponse summaryResponse = summaryService.summarizeText(meeting.getCorrectedTranscript(), meeting);
+        MeetingDto meetingDto = MeetingDto.builder()
+                .transcript(meeting.getTranscript())
+                .corrected_text(meeting.getCorrectedTranscript())
+                .segmentsJson(meeting.getSegmentsJson())
+                .source(meeting.getSource())
+                .status("success")
+                .build();
 
+        SummarizeResponse summaryResponse = summaryService.summarizeTextExtractive(meetingDto);
+
+        // now wr will do the same steps but for the keypoints instead of segments
+        ObjectMapper mapper = new ObjectMapper();
+        String keypointsJson = mapper.writeValueAsString(summaryResponse.getKeypoints());
 
         Summary summary = Summary.builder()
                 .id(UUID.randomUUID())
-                .summary(summaryResponse.getSummary())
+                .summaryJson(keypointsJson)
                 .language(summaryResponse.getLanguage())
                 .createdAt(LocalDateTime.now())
                 .meeting(meeting)
@@ -131,8 +126,58 @@ public class MeetingService {
 
         summaryRepo.save(summary);
 
-        return summaryResponse;
+        SummarizeResponseWithMeetingId response = SummarizeResponseWithMeetingId.builder()
+                .meeting_id(meeting.getId())
+                .json_type(summaryResponse.getJson_type())
+                .num_keypoints(summaryResponse.getNum_keypoints())
+                .num_sentences(summaryResponse.getNum_sentences())
+                .language(summaryResponse.getLanguage())
+                .keypoints(summaryResponse.getKeypoints())
+                .build();
+
+        return response;
    }
+
+    public byte[] reconstructMeeting(UUID meetingId) {
+
+        MeetingTranscript meeting = findById(meetingId);
+
+        // as i said million times, remember that the user can upload textfiles not just video, so of,course we can't reconstruct text
+        if (!"audio".equalsIgnoreCase(meeting.getSource())){
+            throw new RuntimeException("Only videos are reconstructed!");
+        }
+
+        Summary summary = summaryRepo.findByMeeting_Id(meetingId);
+
+        if (summary == null) {
+            throw new RuntimeException("Summary not found");
+        }
+
+        // now finally we use the path we made before to get the video saved in our dummy server
+        File videoFile = new File(meeting.getVideoPath());
+
+        if (!videoFile.exists()) {
+            throw new RuntimeException("Video file not found");
+        }
+
+        return aiClient.reconstructVideo(videoFile, summary.getSummaryJson());
+    }
+
+    private boolean isVideo(MultipartFile file) {
+        String type = file.getContentType();
+        if (type != null && type.startsWith("video/")) return true;
+
+        String name = file.getOriginalFilename();
+        if (name == null) return false;
+
+        String ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
+        return List.of("mp4", "avi", "mov", "mkv", "webm").contains(ext);
+    }
+
+    private String getExtension(String filename) {
+        if (filename == null || !filename.contains(".")) return ".tmp";
+        return filename.substring(filename.lastIndexOf("."));
+    }
 
     public MeetingTranscript findById(UUID meetingId) {
         return transcriptRepo.findById(meetingId)

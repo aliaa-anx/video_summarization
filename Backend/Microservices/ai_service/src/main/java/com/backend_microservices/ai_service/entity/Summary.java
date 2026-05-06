@@ -23,7 +23,7 @@ public class Summary {
     private MeetingTranscript meeting;
 
     @Column(columnDefinition = "TEXT")
-    private String summary;
+    private String summaryJson;
 
     private String title;
 
