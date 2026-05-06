@@ -19,4 +19,6 @@ public interface SummaryRepository
 
     @Query("SELECT s FROM Summary s JOIN s.meeting m ORDER BY s.createdAt DESC")
     List<Summary> findTop5RecentJobs(Pageable pageable);
+
+    Summary findByMeeting_Id(UUID meetingId);
 }

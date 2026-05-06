@@ -1,14 +1,17 @@
 package com.backend_microservices.ai_service.dto;
-import java.util.UUID;
+
 import lombok.*;
+import java.util.List;
+
 @Data
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class SummarizeResponse {
 
-    private String summary;
     private String language;
-
+    private String json_type;
+    private int num_sentences;
+    private int num_keypoints;
+    private List<KeyPointDto> keypoints;
 }
