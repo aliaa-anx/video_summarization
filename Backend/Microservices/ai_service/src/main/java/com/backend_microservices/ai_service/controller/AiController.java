@@ -36,16 +36,16 @@ public class AiController {
 //            @RequestHeader("X-User-Id") String userId
 //    ) throws Exception {
 //
-//        return meetingService.processMeeting(
+//        return meetingService.processMeetingExtractive(
 //                file,
 //                UUID.fromString(userId)
 //        );
 //    }
 
 
-    @PostMapping("/upload-summarize")
+    @PostMapping("/upload-summarize-extractive")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public SummarizeResponseWithMeetingId uploadThenSummarize(
+    public SummarizeResponseWithMeetingId uploadThenSummarizeExtractive(
             @RequestParam("file") MultipartFile file,
             @RequestHeader("X-User-Id") UUID userId
     ) throws Exception {
@@ -66,6 +66,16 @@ public class AiController {
                 .body(resource);
     }
 
+    @PostMapping("/upload-summarize-abstractive/{flag}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public SummaryResponseAbsWithMeetingId uploadThenSummarizeAbstractive(
+            @PathVariable String flag,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader("X-User-Id") UUID userId
+    ) throws Exception {
+
+        return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag);
+    }
 
     /**
      * Endpoint to initialize a chat with a video transcript.

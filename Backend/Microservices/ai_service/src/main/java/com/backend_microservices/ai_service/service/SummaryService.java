@@ -1,9 +1,11 @@
 package com.backend_microservices.ai_service.service;
 
-import com.backend_microservices.ai_service.client.ExtractiveSummarizationClient;
+import com.backend_microservices.ai_service.client.SummarizationClient;
 import com.backend_microservices.ai_service.client.TranscriptionClient;
 import com.backend_microservices.ai_service.dto.*;
 
+import com.backend_microservices.ai_service.entity.MeetingTranscript;
+import com.backend_microservices.ai_service.entity.Summary;
 import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
 import com.backend_microservices.ai_service.repository.SummaryRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,9 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +27,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SummaryService {
 
-    private final ExtractiveSummarizationClient aiClient;
+    private final SummarizationClient aiClient;
     private final SummaryRepository summaryRepo;
     private final TranscriptionClient transcriptionClient;
     private final MeetingTranscriptRepository transcriptRepo;
@@ -56,11 +60,22 @@ public class SummaryService {
                 .status("success")
                 .build();
 
-        SummarizeResponse summaryResponse = aiClient.summarize(request);
+        SummarizeResponse summaryResponse = aiClient.summarizeExtractive(request);
 
         return summaryResponse;
     }
 
+    public SummaryResponseAbstractive summarizeTextAbstractive(String transcript, MeetingTranscript meeting, String flag){
+        SummaryResponseAbstractive aiResponse;
+
+        if (flag.equals("long")){
+             aiResponse = aiClient.summarizeAbstractiveLong(transcript);
+        } else{
+             aiResponse = aiClient.summarizeAbstractiveShort(transcript);
+        }
+
+        return aiResponse;
+    }
 
     public String extractTitle(String summary) {
 
