@@ -4,10 +4,7 @@ import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
 import com.backend_microservices.ai_service.repository.SummaryRepository;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -29,6 +26,7 @@ public class SummarizationClient {
     private final String Reconstruction_URL = "https://geiger-opium-handiness.ngrok-free.dev/reconstruct";
     private final String Summarization_URL_ABSTRACTIVE_LONG = "https://growlingly-ponderous-leah.ngrok-free.dev/long_summary";
     private final String Summarization_URL_ABSTRACTIVE_SHORT = "https://growlingly-ponderous-leah.ngrok-free.dev/short_summary";
+    private final String Summarization_AUDIO_SUMMARY = "https://growlingly-ponderous-leah.ngrok-free.dev/generate-audio/";
 
     public SummarizationClient(MeetingTranscriptRepository transcriptRepo, SummaryRepository summary) {
         this.transcriptRepo = transcriptRepo;
@@ -89,5 +87,30 @@ public class SummarizationClient {
                 SummaryResponseAbstractive.class
         );
     }
+
+
+        public byte[] generateAudio(String text, String speaker) {
+
+            AudioSummaryRequest request = AudioSummaryRequest.builder()
+                    .text(text)
+                    .speaker(speaker)
+                    .build();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<AudioSummaryRequest> entity =
+                    new HttpEntity<>(request, headers);
+
+            ResponseEntity<byte[]> response =
+                    restTemplate.exchange(
+                            Summarization_AUDIO_SUMMARY,
+                            HttpMethod.POST,
+                            entity,
+                            byte[].class
+                    );
+
+            return response.getBody();
+        }
 
 }
