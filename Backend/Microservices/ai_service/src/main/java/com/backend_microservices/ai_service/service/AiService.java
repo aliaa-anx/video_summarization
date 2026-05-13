@@ -31,15 +31,31 @@ public class AiService {
      * New Method: Converts text into a vector (float array) using Python.
      * This is used by ChatService to perform local PGVector searches.
      */
-    public float[] getEmbedding(String text) {
-        // Matches a Python endpoint like: @app.post("/embed")
+//    public float[] getEmbedding(String text, String type) {
+//        // Matches a Python endpoint like: @app.post("/embed")
+//        String url = String.format("%s/embed", pythonNgrokUrl);
+//
+//        // Wrap the text in a simple Map or a DTO
+//        Map<String, String> request = Map.of("text", text);
+//
+//        // Python returns a list of floats, which RestTemplate maps to float[]
+//        return restTemplate.postForObject(url, request, float[].class);
+//    }
+
+    public float[] getEmbedding(String text, String type) {
+
         String url = String.format("%s/embed", pythonNgrokUrl);
 
-        // Wrap the text in a simple Map or a DTO
-        Map<String, String> request = Map.of("text", text);
+        Map<String, String> request = Map.of(
+                "text", text,
+                "type", type
+        );
 
-        // Python returns a list of floats, which RestTemplate maps to float[]
-        return restTemplate.postForObject(url, request, float[].class);
+        return restTemplate.postForObject(
+                url,
+                request,
+                float[].class
+        );
     }
 
     /**

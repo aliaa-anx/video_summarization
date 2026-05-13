@@ -24,6 +24,9 @@ public class Conversation {
     @Column(name = "user_id")
     private UUID userId;
 
+    @Column(name="meeting_id")
+    private UUID meetingId;
+
     private String title;
 
     @Column(name = "created_at")

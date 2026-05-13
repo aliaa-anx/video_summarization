@@ -17,10 +17,41 @@ public interface DocumentRepository extends JpaRepository<Document,Long> {
     // Delete chunks if a video is removed or re-uploaded
     //void deleteBySourceName(String sourceName);
 
-    @Query(value = "SELECT content, start_time, end_time" +
-            " FROM rag.documents " +
-            "WHERE conversation_id = :chatId " +
-            "ORDER BY embedding <=> cast(:queryVector as vector) " +
-            "LIMIT 5", nativeQuery = true)
-    List<Object[]> findRelevantContextWithTimeStamps(@Param("chatId") UUID chatId, @Param("queryVector") float[] queryVector);
+//    @Query(value = "SELECT content, start_time, end_time" +
+//            " FROM rag.documents " +
+//            "WHERE conversation_id = :chatId " +
+//            "ORDER BY embedding <=> cast(:queryVector as vector) " +
+//            "LIMIT 5", nativeQuery = true)
+//    List<Object[]> findRelevantContextWithTimeStamps(@Param("chatId") UUID chatId, @Param("queryVector") float[] queryVector);
+
+//    @Query(value = """
+//    SELECT content,
+//           start_time,
+//           end_time,
+//           embedding <=> cast(:queryVector as vector) AS distance
+//    FROM rag.documents
+//    WHERE conversation_id = :chatId
+//    ORDER BY embedding <=> cast(:queryVector as vector)
+//    LIMIT 8
+//""", nativeQuery = true)
+//    List<Object[]> findRelevantContextWithTimeStamps(
+//            @Param("chatId") UUID chatId,
+//            @Param("queryVector") float[] queryVector
+//    );
+
+    @Query(value = """
+        SELECT content, 
+               start_time, 
+               end_time, 
+               embedding <=> cast(:queryVector as vector) AS distance
+        FROM rag.documents
+        WHERE conversation_id = :chatId
+        AND start_time IS NOT NULL
+        ORDER BY distance ASC
+        LIMIT 8
+    """, nativeQuery = true)
+    List<Object[]> findRelevantContextWithTimeStamps(
+            @Param("chatId") UUID chatId,
+            @Param("queryVector") float[] queryVector
+    );
 }

@@ -28,8 +28,8 @@ public class ExtractiveSummarizationClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private final String Summarization_URL = "https://geiger-opium-handiness.ngrok-free.dev/summarize";
-    private final String Reconstruction_URL = "https://geiger-opium-handiness.ngrok-free.dev/reconstruct";
+    private final String Summarization_URL = "https://palpitate-unguarded-family.ngrok-free.dev/summarize";
+    private final String Reconstruction_URL = "https://palpitate-unguarded-family.ngrok-free.dev/reconstruct";
 
     public ExtractiveSummarizationClient(MeetingTranscriptRepository transcriptRepo, SummaryRepository summary) {
         this.transcriptRepo = transcriptRepo;

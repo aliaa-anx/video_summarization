@@ -14,7 +14,7 @@ public class AiResponse {
     //private String reply;
     private String reply;
     private List<EmbeddingPayload> payload;
-
+    private String error;
     @Data
     public static class EmbeddingPayload { // Must be 'public static'
         @JsonProperty("content")

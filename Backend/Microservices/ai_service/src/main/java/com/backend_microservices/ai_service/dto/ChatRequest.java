@@ -11,10 +11,12 @@ import java.util.List;
 @AllArgsConstructor    // Generates constructor with all fields
 @NoArgsConstructor
 public class ChatRequest {
-
-    //private String message;
     private String message;
-    private List<MessageDTO> history; // The last few messages
-    private List<ContextChunk> context;
+    private List<MessageDTO> message_history;
+    private List<ContextChunk> context_segments;
+    //private String full_text;
+    private String full_text = "";
+    private String source;
+
 
 }

@@ -1,12 +1,10 @@
 package com.backend_microservices.ai_service.service;
 
 import com.backend_microservices.ai_service.dto.*;
-import com.backend_microservices.ai_service.entity.ChatMessage;
-import com.backend_microservices.ai_service.entity.Conversation;
-import com.backend_microservices.ai_service.entity.Document;
-import com.backend_microservices.ai_service.entity.Message;
+import com.backend_microservices.ai_service.entity.*;
 import com.backend_microservices.ai_service.repository.ConversationRepository;
 import com.backend_microservices.ai_service.repository.DocumentRepository;
+import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
 import com.backend_microservices.ai_service.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,11 +15,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @RequiredArgsConstructor
@@ -33,6 +31,7 @@ public class ChatService {
     private final DocumentRepository documentRepository;
     private final RestTemplate restTemplate;
     private final MessageRepository messageRepository;
+    private final MeetingTranscriptRepository transcriptRepository;
     //private final AiResponse response;
     @Value("${python.ai.url}")
     private String pythonNgrokUrl;
@@ -42,30 +41,30 @@ public class ChatService {
 
 
     @Transactional
-    public String initializeChat(UUID userId, String videoTitle, String correctedTranscript,String source, String segmentsJson) {
-        //create new conv
+    public String initializeChat(UUID userId, UUID meetingId, String videoTitle, String correctedTranscript, String source, String segmentsJson) {
+        // 1. Create new conversation and SET THE MEETING ID
         Conversation conversation = new Conversation();
         conversation.setUserId(userId);
+        conversation.setMeetingId(meetingId); // <--- CRITICAL FIX: Link to public.meeting_transcripts
         conversation.setTitle(videoTitle);
+
         Conversation savedConv = conversationRepo.save(conversation);
 
-
+        // 2. Notify Python worker (as you requested)
         Map<String, Object> pythonPayload = new HashMap<>();
         pythonPayload.put("source", source);
+        pythonPayload.put("segments", List.of());
+        pythonPayload.put("corrected_text", correctedTranscript);
+
         String initUrl = pythonNgrokUrl + "/chat/" + savedConv.getId() + "/init";
         restTemplate.postForObject(initUrl, pythonPayload, Map.class);
 
+        // 3. Perform Embeddings & Storage
         if ("audio".equals(source)) {
-            // save to PGVector
             saveAudioSegments(savedConv, segmentsJson);
         } else {
-            pythonPayload.put("segments", List.of());
-            pythonPayload.put("corrected_text", correctedTranscript);
-
-            // For text mode: Java builds and saves embeddings itself
             saveTranscriptEmbeddings(savedConv, correctedTranscript);
         }
-
 
         return savedConv.getId().toString();
     }
@@ -81,7 +80,7 @@ public class ChatService {
                 Double start = ((Number) seg.get("start")).doubleValue();
                 Double end = ((Number) seg.get("end")).doubleValue();
 
-                float[] embedding = aiService.getEmbedding(text);
+                float[] embedding = aiService.getEmbedding(text, "passage");
 
                 Document doc = new Document();
                 doc.setConversation(conv);
@@ -126,7 +125,7 @@ public class ChatService {
             int end = Math.min(i + chunkSize, transcript.length());
             String chunk = transcript.substring(i, end);
 
-            float[] embedding = aiService.getEmbedding(chunk);
+            float[] embedding = aiService.getEmbedding(chunk, "passage");
 
             Document doc = new Document();
             doc.setConversation(conv);
@@ -144,64 +143,165 @@ public class ChatService {
 
 
 
-    @Transactional
-    public String askAi(UUID chatId, String userMessage) {
-        // 1. Get Conversation object (needed for saving messages later)
-        Conversation conv = conversationRepo.findById(chatId)
-                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+//    @Transactional
+//    public String askAi(UUID chatId, String userMessage) {
+//        // 1. Get Conversation object (needed for saving messages later)
+//        Conversation conv = conversationRepo.findById(chatId)
+//                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+//
+//        // 2. SAVE the User's text message to DB history
+//        Message userMsg = new Message();
+//        userMsg.setConversation(conv);
+//        userMsg.setRole("user");
+//        userMsg.setContent(userMessage);
+//        messageRepo.save(userMsg);
+//
+//        // 3. Get the embedding for the search
+//        float[] queryVector = aiService.getEmbedding(userMessage, "query");
+//
+//        // 4. Fetch private context from PGVector
+//        //List<String> context = documentRepository.findRelevantContextWithTimeStamps(chatId, queryVector);
+//
+//        // 5. Fetch history
+//        List<MessageDTO> history = messageRepo.findRecentByChatId(chatId);
+//
+//        List<Object[]> rawContext = documentRepository
+//                .findRelevantContextWithTimeStamps(chatId, queryVector);
+//
+//        // Map to ContextChunk DTOs
+//        List<ContextChunk> context = rawContext.stream()
+//                .map(row -> new ContextChunk(
+//                        (String) row[0], // content
+//                        row[1] != null ? ((Number) row[1]).doubleValue() : null, // startTime
+//                        row[2] != null ? ((Number) row[2]).doubleValue() : null  // endTime
+//                ))
+//                .toList();
+//
+//        // 6. Call Python via ngrok
+//        ChatRequest request = new ChatRequest(userMessage, history, context);
+//        String fullUrl = pythonNgrokUrl + "/chat/" + chatId + "/ask";
+//        AiResponse response = restTemplate.postForObject(fullUrl, request, AiResponse.class);
+//
+//        if (response == null) throw new RuntimeException("AI Response was null");
+//
+//        // 7. SAVE the AI's reply to DB history
+//        Message aiMsg = new Message();
+//        aiMsg.setConversation(conv);
+//        aiMsg.setRole("assistant");
+//        aiMsg.setContent(response.getReply());
+//        messageRepo.save(aiMsg);
+//
+//        // 8. SAVE the new embeddings for future RAG
+//        //saveEmbeddings(chatId, response.getPayload());
+//        saveQAPairEmbedding(conv, userMessage, response.getReply());
+//
+//        return response.getReply();
+//    }
+@Transactional
+public String askAi(UUID chatId, String userMessage) {
+    // 1. Load conversation and meeting metadata
+    Conversation conv = conversationRepo.findById(chatId)
+            .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
-        // 2. SAVE the User's text message to DB history
-        Message userMsg = new Message();
-        userMsg.setConversation(conv);
-        userMsg.setRole("user");
-        userMsg.setContent(userMessage);
-        messageRepo.save(userMsg);
+    MeetingTranscript transcriptMeta = transcriptRepository.findByConversationId(chatId)
+            .orElseThrow(() -> new RuntimeException("Meeting Transcript not found"));
 
-        // 3. Get the embedding for the search
-        float[] queryVector = aiService.getEmbedding(userMessage);
+    // 2. Save user message
+    Message userMsg = new Message();
+    userMsg.setConversation(conv);
+    userMsg.setRole("user");
+    userMsg.setContent(userMessage);
+    messageRepo.save(userMsg);
 
-        // 4. Fetch private context from PGVector
-        //List<String> context = documentRepository.findRelevantContextWithTimeStamps(chatId, queryVector);
+    // 3. Build request for Python
+    ChatRequest request = new ChatRequest();
+    request.setMessage(userMessage);
+    request.setSource(transcriptMeta.getSource());
+    request.setContext_segments(new ArrayList<>());
+    // Only include messages with non-null content in history
+    List<MessageDTO> cleanHistory = messageRepo.findRecentByChatId(chatId)
+            .stream()
+            .map(row -> new MessageDTO((String) row[0], (String) row[1]))
+            .collect(Collectors.toList());
 
-        // 5. Fetch history
-        List<MessageDTO> history = messageRepo.findRecentByChatId(chatId);
+// Reverse so oldest is first (correct order for LLM)
+    Collections.reverse(cleanHistory);
+    request.setMessage_history(cleanHistory);
+    if ("audio".equals(transcriptMeta.getSource())) {
+        request.setContext_segments(performDualVectorSearch(chatId, userMessage));
+    } else {
+        request.setFull_text(transcriptMeta.getCorrectedTranscript());
+    }
 
-        List<Object[]> rawContext = documentRepository
-                .findRelevantContextWithTimeStamps(chatId, queryVector);
+    // 4. Call Python
+    String askUrl = pythonNgrokUrl + "/chat/ask";
+    AiResponse response = restTemplate.postForObject(askUrl, request, AiResponse.class);
 
-        // Map to ContextChunk DTOs
-        List<ContextChunk> context = rawContext.stream()
-                .map(row -> new ContextChunk(
-                        (String) row[0], // content
-                        row[1] != null ? ((Number) row[1]).doubleValue() : null, // startTime
-                        row[2] != null ? ((Number) row[2]).doubleValue() : null  // endTime
-                ))
+    // 5. Check response FIRST before doing anything
+    if (response == null) {
+        throw new RuntimeException("No response from AI server");
+    }
+
+    if (response.getReply() == null) {
+        throw new RuntimeException("AI Worker Error: " + response.getError());
+    }
+
+
+    // 6. Only save if reply is valid
+    Message aiMsg = new Message();
+    aiMsg.setConversation(conv);
+    aiMsg.setRole("assistant");
+    aiMsg.setContent(response.getReply());
+    messageRepo.save(aiMsg);
+
+    // 7. Save Q&A embedding for future retrieval
+    saveQAPairEmbedding(conv, userMessage, response.getReply());
+
+    return response.getReply();
+}
+
+    /**
+     * Replicates the Dual-Search & Merge logic from your notebook
+     */
+    private List<ContextChunk> performDualVectorSearch(UUID chatId, String userMessage) {
+        // Search 1: Full Question
+        float[] queryVector = aiService.getEmbedding(userMessage, "query");
+        List<ScoredChunkDto> search1 = mapToScoredDto(documentRepository.findRelevantContextWithTimeStamps(chatId, queryVector));
+
+        // Search 2: Keywords
+        String keywords = userMessage
+                .replaceAll("(?i)ايه|إيه|ما هو|ما هي|إزاي|كيف|what is|how to|what are|explain|الفرق بين|difference between", "")
+                .trim();
+        float[] keywordsVector = aiService.getEmbedding(keywords, "query");
+        List<ScoredChunkDto> search2 = mapToScoredDto(documentRepository.findRelevantContextWithTimeStamps(chatId, keywordsVector));
+
+        // Merge & Deduplicate by content key
+        Map<String, ScoredChunkDto> deduplicated = new HashMap<>();
+        Stream.concat(search1.stream(), search2.stream()).forEach(chunk ->
+                deduplicated.merge(chunk.getContent(), chunk, (existing, incoming) ->
+                        incoming.getScore() < existing.getScore() ? incoming : existing)
+        );
+
+        // Return top 8 sorted by score/distance
+        return deduplicated.values().stream()
+                .sorted(Comparator.comparingDouble(ScoredChunkDto::getScore))
+                .limit(8)
+                .map(s -> new ContextChunk(s.getContent(), s.getStartTime(), s.getEndTime()))
                 .toList();
+    }
 
-        // 6. Call Python via ngrok
-        ChatRequest request = new ChatRequest(userMessage, history, context);
-        String fullUrl = pythonNgrokUrl + "/chat/" + chatId + "/ask";
-        AiResponse response = restTemplate.postForObject(fullUrl, request, AiResponse.class);
-
-        if (response == null) throw new RuntimeException("AI Response was null");
-
-        // 7. SAVE the AI's reply to DB history
-        Message aiMsg = new Message();
-        aiMsg.setConversation(conv);
-        aiMsg.setRole("assistant");
-        aiMsg.setContent(response.getReply());
-        messageRepo.save(aiMsg);
-
-        // 8. SAVE the new embeddings for future RAG
-        //saveEmbeddings(chatId, response.getPayload());
-        saveQAPairEmbedding(conv, userMessage, response.getReply());
-
-        return response.getReply();
+    private List<ScoredChunkDto> mapToScoredDto(List<Object[]> rows) {
+        return rows.stream().map(row -> new ScoredChunkDto(
+                (String) row[0],
+                row[1] != null ? ((Number) row[1]).doubleValue() : null,
+                row[2] != null ? ((Number) row[2]).doubleValue() : null,
+                ((Number) row[3]).doubleValue() // distance
+        )).toList();
     }
 
 
     private void saveQAPairEmbedding(Conversation conv, String question, String answer) {
-        float[] embedding = aiService.getEmbedding(question + " " + answer);
+        float[] embedding = aiService.getEmbedding(question + " " + answer, "passage");
         Document doc = new Document();
         doc.setConversation(conv);
         doc.setContent("Q: " + question + "\nA: " + answer);

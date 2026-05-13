@@ -15,7 +15,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -71,36 +73,90 @@ public class AiController {
      * Endpoint to initialize a chat with a video transcript.
      * URL: POST http://localhost:8080/ai/init/
      */
+//    @PostMapping("/chat/{meetingId}/init")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public ResponseEntity<String> initChat(
+//
+//            @PathVariable UUID meetingId,
+//            @RequestHeader("X-User-Id") String userId){
+//        MeetingTranscript meeting = meetingService.findById(meetingId);
+//
+//        String conversationId = chatService.initializeChat(
+//                UUID.fromString(userId),
+//                meeting.getFileName(),
+//                meeting.getCorrectedTranscript(),
+//                meeting.getSource(),
+//                meeting.getSegmentsJson()
+//        );
+//        return ResponseEntity.ok(conversationId);
+//    }
+//    /**
+//     * Endpoint to ask a question.
+//     * URL: POST http://localhost:8080/ai/chat/{chatId}
+//     */
+//    @PostMapping("/chat/{chatId}/ask")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public ResponseEntity<String> askQuestion(
+//            @PathVariable UUID chatId,
+//            @RequestBody ChatRequest chatRequest) {
+//
+//
+//        String response = chatService.askAi(chatId, chatRequest.getMessage());
+//        return ResponseEntity.ok(response);
+//    }
+
+    /**
+     * Endpoint to initialize a chat.
+     * Returns the conversationId used for subsequent /ask calls.
+     */
     @PostMapping("/chat/{meetingId}/init")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<String> initChat(
-
+    public ResponseEntity<Map<String, String>> initChat(
             @PathVariable UUID meetingId,
-            @RequestHeader("X-User-Id") String userId){
+            @RequestHeader("X-User-Id") String userId) {
+
         MeetingTranscript meeting = meetingService.findById(meetingId);
 
+        // Pass 'meetingId' as the second argument
         String conversationId = chatService.initializeChat(
                 UUID.fromString(userId),
+                meetingId, //
                 meeting.getFileName(),
                 meeting.getCorrectedTranscript(),
                 meeting.getSource(),
                 meeting.getSegmentsJson()
         );
-        return ResponseEntity.ok(conversationId);
+
+        return ResponseEntity.ok(Map.of("conversationId", conversationId));
     }
+
     /**
      * Endpoint to ask a question.
-     * URL: POST http://localhost:8080/ai/chat/{chatId}
      */
+//    @PostMapping("/chat/{chatId}/ask")
+//    @PreAuthorize("hasAuthority('ROLE_USER')")
+//    public ResponseEntity<Map<String, String>> askQuestion(
+//            @PathVariable UUID chatId,
+//            @RequestBody ChatRequest chatRequest) {
+//
+//        // The service now handles the stateless retrieval from DB
+//        String response = chatService.askAi(chatId, chatRequest.getMessage());
+//
+//        // Wrap in Map: {"reply": "..."}
+//        return ResponseEntity.ok(Map.of("reply", response));
+//    }
+
     @PostMapping("/chat/{chatId}/ask")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<String> askQuestion(
-            @PathVariable UUID chatId,
+    public ResponseEntity<Map<String, String>> askQuestion(@PathVariable UUID chatId,
             @RequestBody ChatRequest chatRequest) {
-
-
         String response = chatService.askAi(chatId, chatRequest.getMessage());
-        return ResponseEntity.ok(response);
+
+        // Fix: Use a HashMap because Map.of() crashes on nulls
+        Map<String, String> body = new HashMap<>();
+        body.put("reply", response != null ? response : "AI Error: Received null reply");
+
+        return ResponseEntity.ok(body);
     }
     /**
      * Endpoint to retrieve chat history.
