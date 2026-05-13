@@ -1,10 +1,10 @@
 package com.backend_microservices.ai_service.service;
 
-import com.backend_microservices.ai_service.client.ExtractiveSummarizationClient;
-import com.backend_microservices.ai_service.client.TranscriptionClient;
+import com.backend_microservices.ai_service.client.SummarizationClient;
 import com.backend_microservices.ai_service.dto.*;
 
-import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
+import com.backend_microservices.ai_service.entity.MeetingTranscript;
+import com.backend_microservices.ai_service.entity.Summary;
 import com.backend_microservices.ai_service.repository.SummaryRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,21 +12,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @Service
 @RequiredArgsConstructor
 public class SummaryService {
 
-    private final ExtractiveSummarizationClient aiClient;
+    private final SummarizationClient aiClient;
     private final SummaryRepository summaryRepo;
-    private final TranscriptionClient transcriptionClient;
-    private final MeetingTranscriptRepository transcriptRepo;
 
 
     public SummarizeResponse summarizeTextExtractive(MeetingDto meetingDto) throws JsonProcessingException {
@@ -56,11 +54,87 @@ public class SummaryService {
                 .status("success")
                 .build();
 
-        SummarizeResponse summaryResponse = aiClient.summarize(request);
+        SummarizeResponse summaryResponse = aiClient.summarizeExtractive(request);
 
         return summaryResponse;
     }
 
+    public SummaryResponseAbstractive summarizeTextAbstractive(String transcript, MeetingTranscript meeting, String flag){
+        SummaryResponseAbstractive aiResponse;
+
+        if (flag.equals("long")){
+             aiResponse = aiClient.summarizeAbstractiveLong(transcript);
+        } else{
+             aiResponse = aiClient.summarizeAbstractiveShort(transcript);
+        }
+
+        return aiResponse;
+    }
+
+    public byte[] convertSummaryToAudio(UUID meetingId) {
+
+        Summary summary = summaryRepo.findByMeeting_Id(meetingId);
+
+        if (summary == null) {
+            throw new RuntimeException("Summary not found");
+        }
+
+        String raw = summary.getSummaryJson();
+
+        String speaker;
+
+        if (summary.getLanguage().equals("english")) {
+            speaker = "en-US-GuyNeural";
+        } else {
+            speaker = "ar-EG-ShakirNeural";
+        }
+
+        // remember that we have 2 types of summarization => extractive & abstractive, so the returned
+        // summaries are not the same, thats why i needed to implement the next function
+        String text = getText(raw);
+
+        return aiClient.generateAudio(text, speaker);
+    }
+
+
+    private String getText(String raw) {
+        // here this function does extra processing on the extractive summaries (because of the timestamps TwT)
+
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+
+        // in case the summary has '[' then its JSON so we need to extract the actual summary text out of it
+        if (raw.trim().startsWith("[")) {
+            try {
+                // converting JSON to java object => List
+                ObjectMapper objectMapper = new ObjectMapper();
+                List<SegmentDto> segments = objectMapper.readValue(
+                        raw,
+                        new TypeReference<List<SegmentDto>>() {}
+                );
+
+                // we need to sort based on the timestamps in case if the input is video/audio
+                // and wee need to soft based on the index if the input is textfile
+                return IntStream.range(0, segments.size())
+                        .boxed()
+                        .sorted(
+                                Comparator.comparingDouble(i ->
+                                        !Double.isNaN(segments.get(i).getStart())
+                                                ? segments.get(i).getStart()  // sort based on timestamps
+                                                : i     // sort based on the index
+                                )
+                        )
+                        .map(i -> segments.get(i).getText())  // return the summary text from the list
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(", "));
+
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid segment JSON format", e);
+            }
+        }
+        return raw;
+    }
 
     public String extractTitle(String summary) {
 

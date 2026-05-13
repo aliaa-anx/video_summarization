@@ -1,15 +1,13 @@
 package com.backend_microservices.ai_service.service;
 
-import com.backend_microservices.ai_service.client.ExtractiveSummarizationClient;
+import com.backend_microservices.ai_service.client.SummarizationClient;
 import com.backend_microservices.ai_service.client.TranscriptionClient;
-import com.backend_microservices.ai_service.dto.MeetingDto;
-import com.backend_microservices.ai_service.dto.SummarizeResponse;
-import com.backend_microservices.ai_service.dto.SummarizeResponseWithMeetingId;
-import com.backend_microservices.ai_service.dto.TranscriptionResponse;
+import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
 import com.backend_microservices.ai_service.entity.Summary;
 import com.backend_microservices.ai_service.repository.MeetingTranscriptRepository;
 import com.backend_microservices.ai_service.repository.SummaryRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,10 +26,10 @@ public class MeetingService {
     private final MeetingTranscriptRepository transcriptRepo;
     private final SummaryService summaryService;
     private final SummaryRepository summaryRepo;
-    private final ExtractiveSummarizationClient aiClient;
+    private final SummarizationClient aiClient;
 
 
-    public MeetingTranscript processMeeting(MultipartFile file, UUID userId) throws Exception {
+    public MeetingTranscript processMeetingExtractive(MultipartFile file, UUID userId) throws Exception {
         // remember that the file can be video or text not only video!
         File fileToProcess;
         String videoPath = null;
@@ -99,7 +97,7 @@ public class MeetingService {
 
     public SummarizeResponseWithMeetingId processMeetingThenSummarizeExtractive(MultipartFile file, UUID userId) throws Exception {
 
-        MeetingTranscript meeting = processMeeting(file, userId);
+        MeetingTranscript meeting = processMeetingExtractive(file, userId);
 
         MeetingDto meetingDto = MeetingDto.builder()
                 .transcript(meeting.getTranscript())
@@ -161,6 +159,57 @@ public class MeetingService {
         }
 
         return aiClient.reconstructVideo(videoFile, summary.getSummaryJson());
+    }
+
+    public MeetingTranscript processMeetingAbstractive(MultipartFile file, UUID userId) throws Exception {
+
+        // we need this to convert our Spring's MultipartFile to java.io.File, that's what the Ai team needs
+        File tempFile = File.createTempFile("meeting_", file.getOriginalFilename());
+        file.transferTo(tempFile);      // the file is copied into a temp file on disk like: meeting_12345.mp3
+
+        // here where our Ai team do their work ;)
+        TranscriptionResponse transcription = transcriptionClient.processFile(tempFile);
+
+        // the rest of the code doesn't even need to be explained...
+        MeetingTranscript meeting = MeetingTranscript.builder()
+                .userId(userId)
+                .fileName(file.getOriginalFilename())
+                .transcript(transcription.getTranscript())
+                .correctedTranscript(transcription.getCorrectedText())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        transcriptRepo.save(meeting);
+
+        return meeting;
+    }
+
+    @Transactional
+    public SummaryResponseAbsWithMeetingId processMeetingThenSummarizeAbstractive(MultipartFile file, UUID userId, String flag) throws Exception {
+
+        MeetingTranscript meeting = processMeetingAbstractive(file, userId);
+
+        SummaryResponseAbstractive summaryResponse = summaryService.summarizeTextAbstractive(meeting.getCorrectedTranscript(), meeting, flag);
+
+
+        Summary summary = Summary.builder()
+                .id(UUID.randomUUID())
+                .summaryJson(summaryResponse.getSummary())
+                .language(summaryResponse.getLanguage())
+                .createdAt(LocalDateTime.now())
+                .meeting(meeting)
+                .title("Untitled")
+                .build();
+
+        summaryRepo.save(summary);
+
+        SummaryResponseAbsWithMeetingId response = SummaryResponseAbsWithMeetingId.builder()
+                .meetingId(meeting.getId())
+                .language(summaryResponse.getLanguage())
+                .summary(summaryResponse.getSummary())
+                .build();
+
+        return response;
     }
 
     private boolean isVideo(MultipartFile file) {

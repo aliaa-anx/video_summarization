@@ -2,6 +2,8 @@ package com.backend_microservices.ai_service.controller;
 
 import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
+import com.backend_microservices.ai_service.entity.Summary;
+import com.backend_microservices.ai_service.repository.SummaryRepository;
 import com.backend_microservices.ai_service.service.ChatService;
 import com.backend_microservices.ai_service.service.MeetingService;
 import com.backend_microservices.ai_service.service.SummaryService;
@@ -29,6 +31,7 @@ public class AiController {
     private final MeetingService meetingService;
     private final SummaryService summaryService;
     private final ChatService chatService;
+    private final SummaryRepository summaryRepo;
 
 
 //    @PostMapping("/upload")
@@ -38,16 +41,16 @@ public class AiController {
 //            @RequestHeader("X-User-Id") String userId
 //    ) throws Exception {
 //
-//        return meetingService.processMeeting(
+//        return meetingService.processMeetingExtractive(
 //                file,
 //                UUID.fromString(userId)
 //        );
 //    }
 
 
-    @PostMapping("/upload-summarize")
+    @PostMapping("/upload-summarize-extractive")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public SummarizeResponseWithMeetingId uploadThenSummarize(
+    public SummarizeResponseWithMeetingId uploadThenSummarizeExtractive(
             @RequestParam("file") MultipartFile file,
             @RequestHeader("X-User-Id") UUID userId
     ) throws Exception {
@@ -68,6 +71,31 @@ public class AiController {
                 .body(resource);
     }
 
+    @PostMapping("/upload-summarize-abstractive/{flag}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public SummaryResponseAbsWithMeetingId uploadThenSummarizeAbstractive(
+            @PathVariable String flag,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader("X-User-Id") UUID userId
+    ) throws Exception {
+
+        return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag);
+    }
+
+    @GetMapping(value = "/summary-to-audio/{meetingId}", produces = "audio/mpeg")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public ResponseEntity<byte[]> summaryToAudio(
+            @PathVariable UUID meetingId
+    ) {
+
+        byte[] audio = summaryService.convertSummaryToAudio(meetingId);
+        String randomFilename = UUID.randomUUID().toString() + ".mp3";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=" + randomFilename)
+                .contentType(MediaType.valueOf("audio/mpeg"))
+                .body(audio);
+    }
 
     /**
      * Endpoint to initialize a chat with a video transcript.

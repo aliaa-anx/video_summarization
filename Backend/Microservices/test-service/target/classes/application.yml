@@ -1,0 +1,14 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: test-service
+
+eureka:
+  instance:
+    hostname: localhost        # Force it to be localhost
+    prefer-ip-address: false   # Disable IP to prioritize the hostname 'localhost'
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
