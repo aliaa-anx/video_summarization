@@ -5,7 +5,7 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/ai_db
+    url: jdbc:postgresql://localhost:5432/auth_db
     username: postgres
     password: 123
   jpa:
@@ -14,8 +14,8 @@ spring:
     show-sql: true
   servlet:
     multipart:
-      max-file-size: 200MB
-      max-request-size: 200MB
+      max-file-size: 500MB
+      max-request-size: 500MB
 
 
 
@@ -31,4 +31,4 @@ jwt:
 # Your custom Python setting at the ROOT level
 python:
   ai:
-    url: https://loyce-unlamentable-nonpleadingly.ngrok-free.dev
+    url: https://class-headphone-switch.ngrok-free.dev

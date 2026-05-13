@@ -8,7 +8,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
-        <module name="test-service" />
         <module name="discovery-server" />
       </profile>
       <profile name="Annotation profile for notification-service" enabled="true">
@@ -27,6 +26,7 @@
     <bytecodeTargetLevel>
       <module name="ai-service (1)" target="20" />
       <module name="ai-service (2)" target="17" />
+      <module name="test-service" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">

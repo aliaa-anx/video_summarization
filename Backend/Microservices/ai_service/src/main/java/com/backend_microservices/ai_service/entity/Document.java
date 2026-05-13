@@ -26,7 +26,7 @@ public class Document {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(name = "embedding", columnDefinition = "vector(384)")
+    @Column(name = "embedding", columnDefinition = "vector(768)")
     private float[] embedding;
 
     @Column(name = "chunk_index")

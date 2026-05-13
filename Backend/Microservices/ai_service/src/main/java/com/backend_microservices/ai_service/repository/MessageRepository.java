@@ -16,9 +16,15 @@ public interface MessageRepository extends JpaRepository<Message,UUID> {
     List<Message> findByConversationIdOrderByCreatedAtAsc(UUID conversationId);
 
     // This allows ChatService to fetch the history in the correct DTO format
-    @Query("SELECT new com.backend_microservices.ai_service.dto.MessageDTO(m.role, m.content) " +
-            "FROM Message m WHERE m.conversation.id = :chatId ORDER BY m.createdAt ASC")
-    List<MessageDTO> findRecentByChatId(UUID chatId);
+    @Query(value = """
+    SELECT role, content 
+    FROM chat.messages 
+    WHERE conversation_id = :chatId 
+    AND content IS NOT NULL
+    ORDER BY created_at DESC 
+    LIMIT 10
+    """, nativeQuery = true)
+    List<Object[]> findRecentByChatId(@Param("chatId") UUID chatId);
 
     @Query("SELECT m FROM Message m WHERE m.conversation.userId = :userId ORDER BY m.createdAt ASC")
     List<Message> findAllByUserId(@Param("userId") UUID userId);
