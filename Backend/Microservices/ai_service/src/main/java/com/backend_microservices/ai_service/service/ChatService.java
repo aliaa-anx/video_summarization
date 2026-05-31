@@ -50,9 +50,10 @@ public class ChatService {
 
         Conversation savedConv = conversationRepo.save(conversation);
 
-        // 2. Notify Python worker (as you requested)
+        // 2. Notify Python worker
         Map<String, Object> pythonPayload = new HashMap<>();
-        pythonPayload.put("source", source);
+        //pythonPayload.put("source", source);
+        pythonPayload.put("source", source != null ? source : "text");
         pythonPayload.put("segments", List.of());
         pythonPayload.put("corrected_text", correctedTranscript);
 
@@ -216,7 +217,9 @@ public String askAi(UUID chatId, String userMessage) {
     // 3. Build request for Python
     ChatRequest request = new ChatRequest();
     request.setMessage(userMessage);
-    request.setSource(transcriptMeta.getSource());
+    String safeSource = transcriptMeta.getSource() != null ? transcriptMeta.getSource() : "text";
+    request.setSource(safeSource);
+    //request.setSource(transcriptMeta.getSource());
     request.setContext_segments(new ArrayList<>());
     // Only include messages with non-null content in history
     List<MessageDTO> cleanHistory = messageRepo.findRecentByChatId(chatId)
