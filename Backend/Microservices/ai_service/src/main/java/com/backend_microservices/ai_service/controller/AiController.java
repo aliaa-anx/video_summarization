@@ -97,41 +97,7 @@ public class AiController {
                 .body(audio);
     }
 
-    /**
-     * Endpoint to initialize a chat with a video transcript.
-     * URL: POST http://localhost:8080/ai/init/
-     */
-//    @PostMapping("/chat/{meetingId}/init")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public ResponseEntity<String> initChat(
-//
-//            @PathVariable UUID meetingId,
-//            @RequestHeader("X-User-Id") String userId){
-//        MeetingTranscript meeting = meetingService.findById(meetingId);
-//
-//        String conversationId = chatService.initializeChat(
-//                UUID.fromString(userId),
-//                meeting.getFileName(),
-//                meeting.getCorrectedTranscript(),
-//                meeting.getSource(),
-//                meeting.getSegmentsJson()
-//        );
-//        return ResponseEntity.ok(conversationId);
-//    }
-//    /**
-//     * Endpoint to ask a question.
-//     * URL: POST http://localhost:8080/ai/chat/{chatId}
-//     */
-//    @PostMapping("/chat/{chatId}/ask")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public ResponseEntity<String> askQuestion(
-//            @PathVariable UUID chatId,
-//            @RequestBody ChatRequest chatRequest) {
-//
-//
-//        String response = chatService.askAi(chatId, chatRequest.getMessage());
-//        return ResponseEntity.ok(response);
-//    }
+
 
     /**
      * Endpoint to initialize a chat.
@@ -158,21 +124,6 @@ public class AiController {
         return ResponseEntity.ok(Map.of("conversationId", conversationId));
     }
 
-    /**
-     * Endpoint to ask a question.
-     */
-//    @PostMapping("/chat/{chatId}/ask")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public ResponseEntity<Map<String, String>> askQuestion(
-//            @PathVariable UUID chatId,
-//            @RequestBody ChatRequest chatRequest) {
-//
-//        // The service now handles the stateless retrieval from DB
-//        String response = chatService.askAi(chatId, chatRequest.getMessage());
-//
-//        // Wrap in Map: {"reply": "..."}
-//        return ResponseEntity.ok(Map.of("reply", response));
-//    }
 
     @PostMapping("/chat/{chatId}/ask")
     @PreAuthorize("hasAuthority('ROLE_USER')")
@@ -186,15 +137,7 @@ public class AiController {
 
         return ResponseEntity.ok(body);
     }
-    /**
-     * Endpoint to retrieve chat history.
-     * URL: GET http://localhost:8080/ai/history/{chatId}
-     */
-//    @GetMapping("/history/{chatId}")
-//    @PreAuthorize("hasAuthority('ROLE_USER')")
-//    public ResponseEntity<List<Message>> getHistory(@PathVariable UUID chatId) {
-//        return ResponseEntity.ok(chatService.getChatHistory(chatId));
-//    }
+
 
     @GetMapping("/history")
     @PreAuthorize("hasAuthority('ROLE_USER')")
