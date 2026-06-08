@@ -25,14 +25,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
-
 public class AiController {
 
     private final MeetingService meetingService;
     private final SummaryService summaryService;
     private final ChatService chatService;
     private final SummaryRepository summaryRepo;
-
 
 //    @PostMapping("/upload")
 //    @PreAuthorize("hasAuthority('ROLE_USER')")
