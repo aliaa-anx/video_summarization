@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Allows your Frontend to call this API without CORS errors
+
 public class AiController {
 
     private final MeetingService meetingService;
