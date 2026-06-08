@@ -19,6 +19,8 @@ public interface AuthClient {
 
     @GetMapping("/api/internal/users/count-all")
     long getTotalUserCount();
+    @PostMapping("/api/internal/users/bulk")
+    List<AdminUserDto> getUsersByIds(@RequestBody List<UUID> userIds);
 
     @GetMapping("/api/internal/users/{id}")
     AdminUserDto getUserById(@PathVariable("id") UUID id);

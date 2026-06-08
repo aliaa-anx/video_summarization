@@ -20,4 +20,5 @@ public class TranscriptionResponse {
     public String getCorrectedText() {
         return corrected_text;
     }
+
 }

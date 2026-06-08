@@ -218,4 +218,5 @@ public class AuthServiceTest {
         // Verification: Ensure the database save operation was never reached
         Mockito.verify(userRepository, Mockito.never()).save(Mockito.any(User.class));
     }
+
 }

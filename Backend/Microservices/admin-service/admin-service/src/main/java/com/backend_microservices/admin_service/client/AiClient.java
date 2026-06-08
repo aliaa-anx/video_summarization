@@ -12,6 +12,7 @@ import java.util.UUID;
 @FeignClient(
         name = "ai-service",
         configuration = FeignConfig.class
+
 )
 public interface AiClient {
 

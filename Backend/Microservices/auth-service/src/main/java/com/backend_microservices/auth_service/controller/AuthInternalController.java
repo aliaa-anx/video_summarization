@@ -6,6 +6,7 @@ import com.backend_microservices.auth_service.repository.RoleRepository;
 import com.backend_microservices.auth_service.entity.Role;
 import com.backend_microservices.auth_service.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,17 @@ public class AuthInternalController {
     private final AuthService authService;
 
 
+    @PostMapping("/bulk")
+    public ResponseEntity<List<AdminUserDto>> getUsersByIds(@RequestBody List<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        // Call your service layer to query Postgres using: userRepository.findAllById(userIds)
+        List<AdminUserDto> users = authService.getUsersByIds(userIds);
+
+        return ResponseEntity.ok(users);
+    }
     @GetMapping("/count-all") // Must match the client!
     public long getTotalUserCount() {
         return userRepository.count();
@@ -30,6 +42,7 @@ public class AuthInternalController {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
 
     @GetMapping
     public List<User> getAllUsers() {

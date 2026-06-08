@@ -27,41 +27,94 @@ public class AdminService {
 
     // In admin-service -> service -> AdminService.java
 
-    public List<UserRankingDto> getTopUserRankings() {
-        // 1. Get the raw activity breakdown from AI Service
-        // AI Service returns: Map<UUID, Map<String, Long>>
-        Map<UUID, Map<String, Long>> activityMap = aiClient.getTopUserActivityBreakdown();
+//    public List<UserRankingDto> getTopUserRankings() {
+//        // 1. Get the raw activity breakdown from AI Service
+//        // AI Service returns: Map<UUID, Map<String, Long>>
+//        Map<UUID, Map<String, Long>> activityMap = aiClient.getTopUserActivityBreakdown();
+//
+//        if (activityMap == null || activityMap.isEmpty()) {
+//            return List.of();
+//        }
+//
+//        // 2. Map the data and attach usernames from Auth Service
+//        return activityMap.entrySet().stream()
+//                .map(entry -> {
+//                    UUID userId = entry.getKey();
+//                    Map<String, Long> stats = entry.getValue();
+//
+//                    // Get the individual counts we sent from the AI service
+//                    long uploads = stats.getOrDefault("uploads", 0L);
+//                    long chats = stats.getOrDefault("chats", 0L);
+//
+//                    try {
+//                        // Match the ID with a real name
+//                        AdminUserDto user = authClient.getUserById(userId);
+//                        return new UserRankingDto(user.getUsername(), uploads, chats);
+//                    } catch (Exception e) {
+//                        return new UserRankingDto("Unknown User", uploads, chats);
+//                    }
+//                })
+//                // 3. Sort by TOTAL activity (Uploads + Chats) so the most active is first
+//                .sorted((u1, u2) -> Long.compare(
+//                        (u2.getUploadCount() + u2.getChatCount()),
+//                        (u1.getUploadCount() + u1.getChatCount())
+//                ))
+//                .limit(5)
+//                .collect(Collectors.toList());
+//    }
+public List<UserRankingDto> getTopUserRankings() {
+    // 1. Get the raw activity breakdown from AI Service
+    Map<UUID, Map<String, Long>> activityMap = aiClient.getTopUserActivityBreakdown();
 
-        if (activityMap == null || activityMap.isEmpty()) {
-            return List.of();
-        }
-
-        // 2. Map the data and attach usernames from Auth Service
-        return activityMap.entrySet().stream()
-                .map(entry -> {
-                    UUID userId = entry.getKey();
-                    Map<String, Long> stats = entry.getValue();
-
-                    // Get the individual counts we sent from the AI service
-                    long uploads = stats.getOrDefault("uploads", 0L);
-                    long chats = stats.getOrDefault("chats", 0L);
-
-                    try {
-                        // Match the ID with a real name
-                        AdminUserDto user = authClient.getUserById(userId);
-                        return new UserRankingDto(user.getUsername(), uploads, chats);
-                    } catch (Exception e) {
-                        return new UserRankingDto("Unknown User", uploads, chats);
-                    }
-                })
-                // 3. Sort by TOTAL activity (Uploads + Chats) so the most active is first
-                .sorted((u1, u2) -> Long.compare(
-                        (u2.getUploadCount() + u2.getChatCount()),
-                        (u1.getUploadCount() + u1.getChatCount())
-                ))
-                .limit(5)
-                .collect(Collectors.toList());
+    if (activityMap == null || activityMap.isEmpty()) {
+        return List.of();
     }
+
+    // 2. Gather all unique user IDs from the map keys
+    List<UUID> userIds = new java.util.ArrayList<>(activityMap.keySet());
+
+    // 3. Fetch ALL usernames from Auth Service in ONE bulk network call
+    Map<UUID, String> usernameMap = java.util.Collections.emptyMap();
+//    try {
+//        List<AdminUserDto> users = authClient.getUsersByIds(userIds);
+//        usernameMap = users.stream()
+//                .collect(Collectors.toMap(AdminUserDto::getId, AdminUserDto::getUsername));
+//    } catch (Exception e) {
+//        log.error("Failed to fetch bulk users from auth-service", e);
+//    }
+    try {
+        List<AdminUserDto> users = authClient.getUsersByIds(userIds);
+        log.info("getUsersByIds returned {} users: {}", users.size(), users);
+        usernameMap = users.stream()
+                .filter(u -> u.getId() != null)  // guard against null IDs
+                .collect(Collectors.toMap(AdminUserDto::getId, AdminUserDto::getUsername));
+        log.info("usernameMap built: {}", usernameMap);
+    } catch (Exception e) {
+        log.error("Failed to fetch bulk users from auth-service", e);  // you already have this
+    }
+
+    // 4. Map the data locally (No more network calls inside the stream loop)
+    final Map<UUID, String> finalUsernames = usernameMap;
+    return activityMap.entrySet().stream()
+            .map(entry -> {
+                UUID userId = entry.getKey();
+                Map<String, Long> stats = entry.getValue();
+
+                long uploads = stats.getOrDefault("uploads", 0L);
+                long chats = stats.getOrDefault("chats", 0L);
+
+                // Look up the name from our local map. If missing, it uses "Unknown User"
+                String username = finalUsernames.getOrDefault(userId, "Unknown User");
+                return new UserRankingDto(username, uploads, chats);
+            })
+            // 5. Sort by TOTAL activity (Uploads + Chats)
+            .sorted((u1, u2) -> Long.compare(
+                    (u2.getUploadCount() + u2.getChatCount()),
+                    (u1.getUploadCount() + u1.getChatCount())
+            ))
+            .limit(5)
+            .collect(Collectors.toList());
+}
 
 
     /**

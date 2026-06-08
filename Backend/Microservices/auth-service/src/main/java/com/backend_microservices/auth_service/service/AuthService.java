@@ -13,10 +13,7 @@ package com.backend_microservices.auth_service.service;
 //import com.backend_microservices.auth_service.security.EmailValidator;
 //import com.backend_microservices.auth_service.security.JwtUtil;
 //import com.backend_microservices.auth_service.security.PasswordValidator;
-import com.backend_microservices.auth_service.dto.AuthResponse;
-import com.backend_microservices.auth_service.dto.LoginRequest;
-import com.backend_microservices.auth_service.dto.RefreshTokenRequest;
-import com.backend_microservices.auth_service.dto.RegisterRequest;
+import com.backend_microservices.auth_service.dto.*;
 import com.backend_microservices.auth_service.entity.RefreshToken;
 import com.backend_microservices.auth_service.entity.Role;
 import com.backend_microservices.auth_service.entity.User;
@@ -34,7 +31,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @Data
@@ -50,6 +50,17 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistService tokenBlacklistService;
 
+    public List<AdminUserDto> getUsersByIds(List<UUID> userIds) {
+        List<User> users = userRepository.findAllById(userIds);
+        return users.stream()
+                .map(user -> new AdminUserDto(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.isEnabled()
+                ))
+                .collect(Collectors.toList());
+    }
     public String Register(RegisterRequest request) {
         //check email
         boolean isEmailValid = EmailValidator.isValid(request.getEmail());
