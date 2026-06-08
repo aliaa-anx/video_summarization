@@ -25,14 +25,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Allows your Frontend to call this API without CORS errors
 public class AiController {
 
     private final MeetingService meetingService;
     private final SummaryService summaryService;
     private final ChatService chatService;
     private final SummaryRepository summaryRepo;
-
 
 //    @PostMapping("/upload")
 //    @PreAuthorize("hasAuthority('ROLE_USER')")
