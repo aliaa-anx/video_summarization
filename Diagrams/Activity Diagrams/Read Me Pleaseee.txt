@@ -1,0 +1,25 @@
+3.5 Activity Diagrams
+3.5.1 Authentication Module
+	-Registration
+	-Login
+	-Refresh Token
+	-Logout
+	-Forgot Password
+	-Reset Password
+	-JWT Blacklist Verification
+3.5.2 AI Processing Module
+	-Upload & Summarize (Abstractive)
+	-Upload & Summarize (Extractive)
+	-Video Reconstruction
+	-Summary to Audio
+	-Initiate Chat
+	-Ask Question
+3.5.3 Audit Module
+	-Get History
+3.5.4 Administration Module
+	-Get Dashboard Snapshot
+	-Get All Users
+	-Search Users
+	-Promote User
+	-Toggle User Ban
+	-Delete User
