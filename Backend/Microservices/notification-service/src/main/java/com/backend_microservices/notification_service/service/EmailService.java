@@ -50,4 +50,13 @@ public class EmailService{
         this.sendEmail(request);
     }
 
+    public void sendAiNotification(String to, String username, String message) {
+        EmailRequest request = new EmailRequest();
+        request.setTo(to);
+            request.setSubject("AI Request Processed");
+            request.setBody("Hello " + username + ",\n\n" + message);
+        // Call your existing sendEmail method
+        this.sendEmail(request);
+    }
+
 }

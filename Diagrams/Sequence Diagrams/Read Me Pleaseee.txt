@@ -1,0 +1,27 @@
+3.4 Sequence Diagrams
+3.4.1 Authentication Module
+	-Registration
+	-Login
+	-Refresh Token
+	-Logout
+	-Forgot Password
+	-Reset Password
+	-JWT Blacklist Verification
+	-Service Authentication
+3.4.2 AI Processing Module
+	-Upload & Summarize (Abstractive)
+	-Upload & Summarize (Extractive)
+	-Video Reconstruction
+	-Summary to Audio
+	-Initiate Chat
+	-Ask Question
+3.4.3 Audit Module
+	-Audit Logging
+	-Get History
+3.4.4 Administration Module
+	-Get Dashboard Snapshot
+	-Get All Users
+	-Search Users
+	-Promote User
+	-Toggle User Ban
+	-Delete User

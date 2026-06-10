@@ -1,7 +1,9 @@
 package com.backend_microservices.ai_service.service;
 
+import com.backend_microservices.ai_service.client.NotificationClient;
 import com.backend_microservices.ai_service.client.SummarizationClient;
 import com.backend_microservices.ai_service.client.TranscriptionClient;
+import com.backend_microservices.ai_service.client.UserClient;
 import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
 import com.backend_microservices.ai_service.entity.Summary;
@@ -27,6 +29,8 @@ public class MeetingService {
     private final SummaryService summaryService;
     private final SummaryRepository summaryRepo;
     private final SummarizationClient aiClient;
+    private final NotificationClient notificationClient;
+    private final UserClient userClient;
 
 
     public MeetingTranscript processMeetingExtractive(MultipartFile file, UUID userId) throws Exception {
@@ -95,7 +99,7 @@ public class MeetingService {
         return transcriptRepo.save(meeting); // here it saves the transcript and its segments
     }
 
-    public SummarizeResponseWithMeetingId processMeetingThenSummarizeExtractive(MultipartFile file, UUID userId) throws Exception {
+    public SummarizeResponseWithMeetingId processMeetingThenSummarizeExtractive(MultipartFile file, UUID userId, Boolean getNotified) throws Exception {
 
         MeetingTranscript meeting = processMeetingExtractive(file, userId);
 
@@ -132,11 +136,16 @@ public class MeetingService {
                 .language(summaryResponse.getLanguage())
                 .keypoints(summaryResponse.getKeypoints())
                 .build();
+        if(getNotified){
+            System.out.println("NOTIFICATION");
+            UserDto user = userClient.getUserById(userId);
+            notificationClient.sendSummaryEmail(user.getEmail(), user.getUsername(), "Your Extractive Summary is Ready");
+        }
 
         return response;
    }
 
-    public byte[] reconstructMeeting(UUID meetingId) {
+    public byte[] reconstructMeeting(UUID meetingId, Boolean getNotified, UUID userId) {
 
         MeetingTranscript meeting = findById(meetingId);
 
@@ -158,7 +167,14 @@ public class MeetingService {
             throw new RuntimeException("Video file not found");
         }
 
-        return aiClient.reconstructVideo(videoFile, summary.getSummaryJson());
+        byte[] reconstructedVideo = aiClient.reconstructVideo(videoFile, summary.getSummaryJson());
+
+        if(getNotified == true){
+            UserDto user = userClient.getUserById(userId);
+            notificationClient.sendSummaryEmail(user.getEmail(), user.getUsername(), "Your Reconstructed Video is Ready");
+        }
+
+        return reconstructedVideo;
     }
 
     public MeetingTranscript processMeetingAbstractive(MultipartFile file, UUID userId) throws Exception {
@@ -185,7 +201,7 @@ public class MeetingService {
     }
 
     @Transactional
-    public SummaryResponseAbsWithMeetingId processMeetingThenSummarizeAbstractive(MultipartFile file, UUID userId, String flag) throws Exception {
+    public SummaryResponseAbsWithMeetingId processMeetingThenSummarizeAbstractive(MultipartFile file, UUID userId, String flag, Boolean getNotified) throws Exception {
 
         MeetingTranscript meeting = processMeetingAbstractive(file, userId);
 
@@ -208,6 +224,11 @@ public class MeetingService {
                 .language(summaryResponse.getLanguage())
                 .summary(summaryResponse.getSummary())
                 .build();
+
+        if(getNotified == true){
+            UserDto user = userClient.getUserById(userId);
+            notificationClient.sendSummaryEmail(user.getEmail(), user.getUsername(), "Your Abstractive Summary is Ready");
+        }
 
         return response;
     }
