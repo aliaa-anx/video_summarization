@@ -87,9 +87,9 @@ public class SummaryService {
         String speaker;
 
         if (summary.getLanguage().equals("english")) {
-            speaker = "en-US-GuyNeural";
+            speaker = "en";
         } else {
-            speaker = "ar-EG-ShakirNeural";
+            speaker = "ar";
         }
 
         // remember that we have 2 types of summarization => extractive & abstractive, so the returned
