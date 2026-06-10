@@ -24,8 +24,8 @@ public class SummarizationClient {
 
     private final String Summarization_URL_EXTRACTIVE = "https://geiger-opium-handiness.ngrok-free.dev/summarize";
     private final String Reconstruction_URL = "https://geiger-opium-handiness.ngrok-free.dev/reconstruct";
-    private final String Summarization_URL_ABSTRACTIVE_LONG = "https://growlingly-ponderous-leah.ngrok-free.dev/long_summary";
-    private final String Summarization_URL_ABSTRACTIVE_SHORT = "https://growlingly-ponderous-leah.ngrok-free.dev/short_summary";
+    private final String Summarization_URL_ABSTRACTIVE_LONG = "https://excretory-agnostic-pacifism.ngrok-free.dev/long_summary";
+    private final String Summarization_URL_ABSTRACTIVE_SHORT = "https://excretory-agnostic-pacifism.ngrok-free.dev/short_summary";
     private final String Summarization_AUDIO_SUMMARY = "https://growlingly-ponderous-leah.ngrok-free.dev/generate-audio/";
 
     public SummarizationClient(MeetingTranscriptRepository transcriptRepo, SummaryRepository summary) {
