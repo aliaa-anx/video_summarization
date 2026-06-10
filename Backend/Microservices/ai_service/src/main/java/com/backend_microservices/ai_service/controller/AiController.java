@@ -46,15 +46,6 @@ public class AiController {
 //    }
 
 
-    @GetMapping("/get-meeting-transcript/{meetingId}")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
-    public String getMeetingTranscript(
-            @PathVariable UUID meetingId
-    ) throws Exception {
-        MeetingTranscript meeting = meetingService.findById(meetingId);
-        return meeting.getCorrectedTranscript();
-    }
-
     @PostMapping("/upload-summarize-extractive")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public SummarizeResponseWithMeetingId uploadThenSummarizeExtractive(
@@ -112,6 +103,16 @@ public class AiController {
                 .body(audio);
     }
 
+    @GetMapping("/get-meeting-transcript/{meetingId}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public CorrectedTranscriptDto getMeetingTranscript(
+            @PathVariable UUID meetingId
+    ) throws Exception {
+        MeetingTranscript meeting = meetingService.findById(meetingId);
+        CorrectedTranscriptDto correctedTranscript = new CorrectedTranscriptDto();
+        correctedTranscript.setCorrectedTranscript(meeting.getCorrectedTranscript());
+        return correctedTranscript;
+    }
 
 
     /**
