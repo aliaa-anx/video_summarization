@@ -42,6 +42,16 @@ public class EmailController {
             // Pass the data to the service logic
             emailService.sendBanNotification(email, username, isBanned);
         }
+
+    @PostMapping("/summary-email")
+    public void sendSummaryEmail(@RequestParam String email,
+                             @RequestParam String username,
+                             @RequestParam String message
+    ) {
+
+        // Pass the data to the service logic
+        emailService.sendAiNotification(email, username, message);
+    }
     }
 
 

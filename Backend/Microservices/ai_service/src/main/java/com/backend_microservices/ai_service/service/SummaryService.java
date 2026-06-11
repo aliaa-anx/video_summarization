@@ -1,6 +1,8 @@
 package com.backend_microservices.ai_service.service;
 
+import com.backend_microservices.ai_service.client.NotificationClient;
 import com.backend_microservices.ai_service.client.SummarizationClient;
+import com.backend_microservices.ai_service.client.UserClient;
 import com.backend_microservices.ai_service.dto.*;
 
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
@@ -25,7 +27,8 @@ public class SummaryService {
 
     private final SummarizationClient aiClient;
     private final SummaryRepository summaryRepo;
-
+    private final NotificationClient notificationClient;
+    private final UserClient userClient;
 
     public SummarizeResponse summarizeTextExtractive(MeetingDto meetingDto) throws JsonProcessingException {
 
@@ -71,7 +74,7 @@ public class SummaryService {
         return aiResponse;
     }
 
-    public byte[] convertSummaryToAudio(UUID meetingId) {
+    public byte[] convertSummaryToAudio(UUID meetingId, Boolean getNotified, UUID userId) {
 
         Summary summary = summaryRepo.findByMeeting_Id(meetingId);
 
@@ -84,16 +87,23 @@ public class SummaryService {
         String speaker;
 
         if (summary.getLanguage().equals("english")) {
-            speaker = "en-US-GuyNeural";
+            speaker = "en";
         } else {
-            speaker = "ar-EG-ShakirNeural";
+            speaker = "ar";
         }
 
         // remember that we have 2 types of summarization => extractive & abstractive, so the returned
         // summaries are not the same, thats why i needed to implement the next function
         String text = getText(raw);
 
-        return aiClient.generateAudio(text, speaker);
+        byte[] generatedAudio = aiClient.generateAudio(text, speaker);
+
+        if(getNotified == true){
+            UserDto user = userClient.getUserById(userId);
+            notificationClient.sendSummaryEmail(user.getEmail(), user.getUsername(), "Your Audio Summary is Ready");
+        }
+
+        return generatedAudio;
     }
 
 

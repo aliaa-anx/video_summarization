@@ -50,16 +50,21 @@ public class AiController {
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public SummarizeResponseWithMeetingId uploadThenSummarizeExtractive(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean getNotified,
             @RequestHeader("X-User-Id") UUID userId
     ) throws Exception {
 
-        return meetingService.processMeetingThenSummarizeExtractive(file, userId);
+        return meetingService.processMeetingThenSummarizeExtractive(file, userId, getNotified);
     }
 
 
     @GetMapping(value = "/reconstruct/{meetingId}", produces = "video/mp4")
-    public ResponseEntity<Resource> reconstruct(@PathVariable UUID meetingId) {
-        byte[] videoBytes = meetingService.reconstructMeeting(meetingId);
+    public ResponseEntity<Resource> reconstruct(
+            @PathVariable UUID meetingId,
+            @RequestParam(defaultValue = "false") boolean getNotified,
+            @RequestHeader("X-User-Id") UUID userId
+    ) {
+        byte[] videoBytes = meetingService.reconstructMeeting(meetingId, getNotified, userId);
         ByteArrayResource resource = new ByteArrayResource(videoBytes);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -74,19 +79,22 @@ public class AiController {
     public SummaryResponseAbsWithMeetingId uploadThenSummarizeAbstractive(
             @PathVariable String flag,
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") UUID userId
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam(defaultValue = "false") boolean getNotified
     ) throws Exception {
 
-        return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag);
+        return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag, getNotified);
     }
 
     @GetMapping(value = "/summary-to-audio/{meetingId}", produces = "audio/mpeg")
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<byte[]> summaryToAudio(
-            @PathVariable UUID meetingId
+            @PathVariable UUID meetingId,
+            @RequestParam(defaultValue = "false") boolean getNotified,
+            @RequestHeader("X-User-Id") UUID userId
     ) {
 
-        byte[] audio = summaryService.convertSummaryToAudio(meetingId);
+        byte[] audio = summaryService.convertSummaryToAudio(meetingId, getNotified, userId);
         String randomFilename = UUID.randomUUID().toString() + ".mp3";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -95,6 +103,16 @@ public class AiController {
                 .body(audio);
     }
 
+    @GetMapping("/get-meeting-transcript/{meetingId}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public CorrectedTranscriptDto getMeetingTranscript(
+            @PathVariable UUID meetingId
+    ) throws Exception {
+        MeetingTranscript meeting = meetingService.findById(meetingId);
+        CorrectedTranscriptDto correctedTranscript = new CorrectedTranscriptDto();
+        correctedTranscript.setCorrectedTranscript(meeting.getCorrectedTranscript());
+        return correctedTranscript;
+    }
 
 
     /**
