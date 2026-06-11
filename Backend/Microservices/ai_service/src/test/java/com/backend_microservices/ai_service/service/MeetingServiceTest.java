@@ -258,7 +258,7 @@ public class MeetingServiceTest {
 
         // 2. Act
         SummarizeResponseWithMeetingId result =
-                meetingService.processMeetingThenSummarizeExtractive(file, userId);
+                meetingService.processMeetingThenSummarizeExtractive(file, userId,false);
 
         // 3. Assert
         assertNotNull(result);
@@ -289,7 +289,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         assertThrows(Exception.class, () ->
-                meetingService.processMeetingThenSummarizeExtractive(file, userId)
+                meetingService.processMeetingThenSummarizeExtractive(file, userId,false)
         );
 
         Mockito.verify(summaryRepo, Mockito.never()).save(Mockito.any(Summary.class));
@@ -322,7 +322,7 @@ public class MeetingServiceTest {
                 .thenReturn(fakeVideo);
 
         // 2. Act
-        byte[] result = meetingService.reconstructMeeting(meetingId);
+        byte[] result = meetingService.reconstructMeeting(meetingId,false,UUID.randomUUID());
 
         // 3. Assert
         assertNotNull(result);
@@ -345,7 +345,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                meetingService.reconstructMeeting(meetingId)
+                meetingService.reconstructMeeting(meetingId,false,UUID.randomUUID())
         );
         assertTrue(ex.getMessage().contains("Only videos are reconstructed"));
 
@@ -367,7 +367,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                meetingService.reconstructMeeting(meetingId)
+                meetingService.reconstructMeeting(meetingId,false,UUID.randomUUID())
         );
         assertTrue(ex.getMessage().contains("Summary not found"));
 
@@ -392,7 +392,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                meetingService.reconstructMeeting(meetingId)
+                meetingService.reconstructMeeting(meetingId,false,UUID.randomUUID())
         );
         assertTrue(ex.getMessage().contains("Video file not found"));
 
@@ -411,7 +411,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         assertThrows(RuntimeException.class, () ->
-                meetingService.reconstructMeeting(meetingId)
+                meetingService.reconstructMeeting(meetingId,false,UUID.randomUUID())
         );
 
         Mockito.verify(summaryRepo, Mockito.never()).findByMeeting_Id(Mockito.any());
@@ -502,7 +502,7 @@ public class MeetingServiceTest {
 
         // 2. Act
         SummaryResponseAbsWithMeetingId result =
-                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "short");
+                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "short",false);
 
         // 3. Assert
         // Note: processMeetingAbstractive() returns the locally built entity (not the repo.save() result),
@@ -543,7 +543,7 @@ public class MeetingServiceTest {
 
         // 2. Act
         SummaryResponseAbsWithMeetingId result =
-                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "long");
+                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "long",false);
 
         // 3. Assert
         assertNotNull(result);
@@ -574,7 +574,7 @@ public class MeetingServiceTest {
 
         // 2. Act & Assert
         assertThrows(Exception.class, () ->
-                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "short")
+                meetingService.processMeetingThenSummarizeAbstractive(file, userId, "short",false)
         );
 
         Mockito.verify(summaryRepo, Mockito.never()).save(Mockito.any(Summary.class));

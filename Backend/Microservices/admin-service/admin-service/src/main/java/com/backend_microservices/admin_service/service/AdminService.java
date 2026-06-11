@@ -89,6 +89,8 @@ public List<UserRankingDto> getTopUserRankings() {
                 .filter(u -> u.getId() != null)  // guard against null IDs
                 .collect(Collectors.toMap(AdminUserDto::getId, AdminUserDto::getUsername));
         log.info("usernameMap built: {}", usernameMap);
+        log.info("ActivityMap IDs: {}", activityMap.keySet());
+        log.info("UsernameMap IDs: {}", usernameMap.keySet());
     } catch (Exception e) {
         log.error("Failed to fetch bulk users from auth-service", e);  // you already have this
     }
@@ -105,6 +107,10 @@ public List<UserRankingDto> getTopUserRankings() {
 
                 // Look up the name from our local map. If missing, it uses "Unknown User"
                 String username = finalUsernames.getOrDefault(userId, "Unknown User");
+                if (username == null) {
+                    log.warn("Missing user in auth-service: {}", userId);
+                    username = "Unknown User";
+                }
                 return new UserRankingDto(username, uploads, chats);
             })
             // 5. Sort by TOTAL activity (Uploads + Chats)

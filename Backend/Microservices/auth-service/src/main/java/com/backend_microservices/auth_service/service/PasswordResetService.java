@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -25,13 +25,41 @@ public class PasswordResetService {
 
 
     //1. CREATE TOKEN
+//    @Transactional
+//    public String createTokenForUser(User user) {
+//        // 1. Clean up old tokens
+//        tokenRepository.deleteByUserId(user.getId());
+//
+//        // 2. Create and Save the new token
+//        String token = UUID.randomUUID().toString();
+//        PasswordResetTokens myToken = new PasswordResetTokens();
+//        myToken.setToken(token);
+//        myToken.setUser(user);
+//        myToken.setExpiryDate(LocalDateTime.now().plusMinutes(15));
+//        myToken.setUsed(false);
+//
+//        tokenRepository.save(myToken);
+//
+//
+//
+//        return token;
+//    }
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private String generateToken() {
+        StringBuilder token = new StringBuilder(4);
+        for (int i = 0; i < 4; i++) {
+            token.append(CHARACTERS.charAt(RANDOM.nextInt(CHARACTERS.length())));
+        }
+        return token.toString();
+    }
+
     @Transactional
     public String createTokenForUser(User user) {
-        // 1. Clean up old tokens
         tokenRepository.deleteByUserId(user.getId());
 
-        // 2. Create and Save the new token
-        String token = UUID.randomUUID().toString();
+        String token = generateToken();
         PasswordResetTokens myToken = new PasswordResetTokens();
         myToken.setToken(token);
         myToken.setUser(user);
@@ -39,8 +67,6 @@ public class PasswordResetService {
         myToken.setUsed(false);
 
         tokenRepository.save(myToken);
-
-
 
         return token;
     }
@@ -64,6 +90,24 @@ public class PasswordResetService {
         }
 
         return "valid";
+    }
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetTokens storedToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (storedToken.getExpiryDate().isBefore(LocalDateTime.now()))
+            throw new RuntimeException("Token expired");
+
+        if (storedToken.isUsed())
+            throw new RuntimeException("Token already used");
+
+        User user = storedToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        storedToken.setUsed(true);
+        tokenRepository.save(storedToken);
     }
     public User getUserByToken(String token) {
         return tokenRepository.findByToken(token)
