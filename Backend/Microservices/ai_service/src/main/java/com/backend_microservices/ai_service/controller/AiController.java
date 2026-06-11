@@ -85,6 +85,18 @@ public class AiController {
 
         return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag, getNotified);
     }
+//        @PostMapping("/upload-summarize-abstractive/{flag}")
+//        @PreAuthorize("hasAuthority('ROLE_USER')")
+//        public SummaryResponseAbsWithMeetingId uploadThenSummarizeAbstractive(
+//                @PathVariable String flag,
+//                @RequestParam("file") MultipartFile file,
+//                @RequestHeader("X-User-Id") UUID userId,
+//                @RequestParam(value = "videoDurationMinutes", required = false) Double videoDurationMinutes,
+//                @RequestParam(value = "targetSummaryMinutes", required = false) Double targetSummaryMinutes
+//        ) throws Exception {
+//
+//            return meetingService.processMeetingThenSummarizeAbstractive(file, userId, flag, videoDurationMinutes, targetSummaryMinutes);
+//        }
 
     @GetMapping(value = "/summary-to-audio/{meetingId}", produces = "audio/mpeg")
     @PreAuthorize("hasAuthority('ROLE_USER')")

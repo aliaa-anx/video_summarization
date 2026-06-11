@@ -16,4 +16,5 @@ public class SummaryResponseAbsWithMeetingId {
     UUID meetingId;
     private String summary;
     private String language;
+
 }

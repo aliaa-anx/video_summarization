@@ -1,6 +1,8 @@
 package com.backend_microservices.ai_service.service;
 
+import com.backend_microservices.ai_service.client.NotificationClient;
 import com.backend_microservices.ai_service.client.SummarizationClient;
+import com.backend_microservices.ai_service.client.UserClient;
 import com.backend_microservices.ai_service.dto.*;
 import com.backend_microservices.ai_service.entity.MeetingTranscript;
 import com.backend_microservices.ai_service.entity.Summary;
@@ -42,6 +44,9 @@ public class SummaryServiceTest {
     // ── Mocked dependencies ────────────────────────────────────────────────
     @Mock private SummarizationClient aiClient;
     @Mock private SummaryRepository summaryRepo;
+    // Add these two mocks at the top with the others
+    @Mock private NotificationClient notificationClient;
+    @Mock private UserClient userClient;
 
     // ── System Under Test ─────────────────────────────────────────────────
     @InjectMocks
@@ -301,22 +306,41 @@ public class SummaryServiceTest {
 
         byte[] fakeAudio = new byte[]{1, 2, 3};
         Mockito.when(aiClient.generateAudio(Mockito.eq("Plain text summary."),
-                Mockito.eq("en-US-GuyNeural"))).thenReturn(fakeAudio);
+                Mockito.eq("en"))).thenReturn(fakeAudio);
 
         // 2. Act
-        byte[] result = summaryService.convertSummaryToAudio(meetingId);
+        byte[] result = summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID());
 
         // 3. Assert
         assertNotNull(result);
         assertArrayEquals(fakeAudio, result);
         Mockito.verify(aiClient, Mockito.times(1))
-                .generateAudio("Plain text summary.", "en-US-GuyNeural");
+                .generateAudio("Plain text summary.", "en");
     }
 
     /**
      * Happy path — Arabic summary (plain text).
      * Verifies the Arabic speaker "ar-EG-ShakirNeural" is selected for non-English.
      */
+//    @Test
+//    void testConvertSummaryToAudio_Success_ArabicPlainText() {
+//        // 1. Arrange
+//        UUID meetingId = UUID.randomUUID();
+//        Summary summary = makeSummary(meetingId, "ملخص النص.", "arabic");
+//        Mockito.when(summaryRepo.findByMeeting_Id(meetingId)).thenReturn(summary);
+//
+//        byte[] fakeAudio = new byte[]{9, 8, 7};
+//        Mockito.when(aiClient.generateAudio(Mockito.eq("ملخص النص."),
+//                Mockito.eq("ar-EG-ShakirNeural"))).thenReturn(fakeAudio);
+//
+//        // 2. Act
+//        byte[] result = summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID());
+//
+//        // 3. Assert
+//        assertArrayEquals(fakeAudio, result);
+//        Mockito.verify(aiClient, Mockito.times(1))
+//                .generateAudio("ملخص النص.", "ar-EG-ShakirNeural");
+//    }
     @Test
     void testConvertSummaryToAudio_Success_ArabicPlainText() {
         // 1. Arrange
@@ -325,16 +349,16 @@ public class SummaryServiceTest {
         Mockito.when(summaryRepo.findByMeeting_Id(meetingId)).thenReturn(summary);
 
         byte[] fakeAudio = new byte[]{9, 8, 7};
-        Mockito.when(aiClient.generateAudio(Mockito.eq("ملخص النص."),
-                Mockito.eq("ar-EG-ShakirNeural"))).thenReturn(fakeAudio);
+        Mockito.when(aiClient.generateAudio(Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(fakeAudio);
 
         // 2. Act
-        byte[] result = summaryService.convertSummaryToAudio(meetingId);
+        byte[] result = summaryService.convertSummaryToAudio(meetingId, false, UUID.randomUUID());
 
-        // 3. Assert
+        // 3. Assert — audio bytes returned, and Arabic speaker "ar" was used
         assertArrayEquals(fakeAudio, result);
         Mockito.verify(aiClient, Mockito.times(1))
-                .generateAudio("ملخص النص.", "ar-EG-ShakirNeural");
+                .generateAudio(Mockito.eq("ملخص النص."), Mockito.eq("ar"));
     }
 
     /**
@@ -355,10 +379,10 @@ public class SummaryServiceTest {
         // getText() joins with ", " after sorting by start time
         String expectedText = "First point., Second point.";
         Mockito.when(aiClient.generateAudio(Mockito.eq(expectedText),
-                Mockito.eq("en-US-GuyNeural"))).thenReturn(fakeAudio);
+                Mockito.eq("en"))).thenReturn(fakeAudio);
 
         // 2. Act
-        byte[] result = summaryService.convertSummaryToAudio(meetingId);
+        byte[] result = summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID());
 
         // 3. Assert
         assertNotNull(result);
@@ -377,7 +401,7 @@ public class SummaryServiceTest {
 
         // 2. Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                summaryService.convertSummaryToAudio(meetingId)
+                summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID())
         );
         assertTrue(ex.getMessage().contains("Summary not found"));
         Mockito.verify(aiClient, Mockito.never())
@@ -397,7 +421,7 @@ public class SummaryServiceTest {
 
         // 2. Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                summaryService.convertSummaryToAudio(meetingId)
+                summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID())
         );
         assertTrue(ex.getMessage().contains("Invalid segment JSON format"));
         Mockito.verify(aiClient, Mockito.never())
@@ -418,10 +442,10 @@ public class SummaryServiceTest {
                 .thenReturn(new byte[]{});
 
         // 2. Act — must not throw
-        assertDoesNotThrow(() -> summaryService.convertSummaryToAudio(meetingId));
+        assertDoesNotThrow(() -> summaryService.convertSummaryToAudio(meetingId,false,UUID.randomUUID()));
 
         Mockito.verify(aiClient, Mockito.times(1))
-                .generateAudio("", "en-US-GuyNeural");
+                .generateAudio("", "en");
     }
 
 
